@@ -27,8 +27,8 @@
 (define-public (register-builder (github-handle (string-ascii 40)))
   (begin
     (asserts! (is-none (map-get? BuilderProfiles tx-sender)) ERR_ALREADY_REGISTERED)
-    (try! (stx-transfer? REGISTRATION_FEE tx-sender .treasury))
-    (try! (contract-call? .treasury record-fee tx-sender REGISTRATION_FEE))
+    (try! (stx-transfer? REGISTRATION_FEE tx-sender .ProofOfBuilder-Treasury))
+    (try! (contract-call? .ProofOfBuilder-Treasury record-fee tx-sender REGISTRATION_FEE))
     (map-set BuilderProfiles tx-sender {
       github: github-handle,
       reputation: u0,

@@ -5,7 +5,7 @@
 ;; Network: Stacks Mainnet
 ;; Clarity Version: 2
 
-(impl-trait .nft-trait.nft-trait)
+(impl-trait .SIP-009.SIP-009)
 
 (define-constant CONTRACT_OWNER tx-sender)
 (define-constant ERR_UNAUTHORIZED (err u100))
@@ -23,8 +23,8 @@
     (token-id (+ (var-get last-token-id) u1))
   )
     (asserts! (is-none (map-get? MintedBy tx-sender)) ERR_ALREADY_MINTED)
-    (try! (stx-transfer? MINT_FEE tx-sender .treasury))
-    (try! (contract-call? .treasury record-fee tx-sender MINT_FEE))
+    (try! (stx-transfer? MINT_FEE tx-sender .ProofOfBuilder-Treasury))
+    (try! (contract-call? .ProofOfBuilder-Treasury record-fee tx-sender MINT_FEE))
     (try! (nft-mint? builder-sbt token-id tx-sender))
     (map-set MintedBy tx-sender token-id)
     (var-set last-token-id token-id)
