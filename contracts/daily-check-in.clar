@@ -26,8 +26,8 @@
     ;; Enforce 24h cooldown
     (asserts! (or (is-eq last-block u0) (>= stacks-block-height (+ last-block DAY_IN_BLOCKS))) ERR_ALREADY_CHECKED_IN)
     ;; Send fee to treasury
-    (try! (stx-transfer? CHECK_IN_FEE tx-sender .treasury))
-    (try! (contract-call? .treasury record-fee tx-sender CHECK_IN_FEE))
+    (try! (stx-transfer? CHECK_IN_FEE tx-sender .ProofOfBuilder-Treasury))
+    (try! (contract-call? .ProofOfBuilder-Treasury record-fee tx-sender CHECK_IN_FEE))
     ;; Update streak: reset if missed >2 days, otherwise increment
     (if (and (> last-block u0) (> blocks-since (* u2 DAY_IN_BLOCKS)))
       (map-set CheckInStreak tx-sender u1)

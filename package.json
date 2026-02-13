@@ -1,0 +1,23 @@
+{
+  "name": "proof-of-builder-platform",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Premium on-chain reputation dashboard for the Stacks ecosystem.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "vite": "^7.3.1"
+  },
+  "dependencies": {
+    "@stacks/common": "^7.3.1",
+    "@stacks/connect": "^8.2.4",
+    "@stacks/network": "^7.3.1",
+    "@stacks/transactions": "^7.3.1",
+    "lucide": "^0.564.0"
+  }
+}

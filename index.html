@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ProofOfBuilder | On-chain Reputation Engine for Stacks</title>
+  <meta name="description"
+    content="Decentralized identity and reputation engine for the Stacks ecosystem. Build your on-chain legacy." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;500;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --primary: #FF4B26;
+      --primary-light: #FF6A4D;
+      --primary-glow: rgba(255, 75, 38, 0.35);
+      --accent: #7C3AED;
+      --accent-glow: rgba(124, 58, 237, 0.25);
+      --bg: #07070A;
+      --bg-card: rgba(16, 16, 22, 0.85);
+      --bg-card-hover: rgba(22, 22, 30, 0.95);
+      --text: #F0F0F5;
+      --text-dim: #8B8B9E;
+      --text-muted: #5A5A6E;
+      --border: rgba(255, 255, 255, 0.07);
+      --border-hover: rgba(255, 255, 255, 0.15);
+      --gradient: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      --radius: 20px;
+      --radius-sm: 12px;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Outfit', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Background Ambiance */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 15% 10%, rgba(255, 75, 38, 0.08) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 60% at 85% 80%, rgba(124, 58, 237, 0.06) 0%, transparent 70%),
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.01) 0%, transparent 80%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #app {
+      position: relative;
+      z-index: 1;
+    }
+
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    /* ===== NAVBAR ===== */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(7, 7, 10, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.85rem 0;
+    }
+
+    .nav-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+    }
+
+    .logo-icon {
+      font-size: 1.5rem;
+      filter: drop-shadow(0 0 8px var(--primary-glow));
+    }
+
+    .logo-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 1.2rem;
+      letter-spacing: -0.3px;
+      color: var(--text);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 1.8rem;
+    }
+
+    .nav-links a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: var(--transition);
+      position: relative;
+    }
+
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--gradient);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    .nav-links a:hover {
+      color: var(--text);
+    }
+
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      padding: 0.7rem 1.4rem;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      border: none;
+      font-family: inherit;
+      font-size: 0.875rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-glow {
+      background: var(--gradient);
+      color: #fff;
+      box-shadow: 0 4px 20px var(--primary-glow);
+    }
+
+    .btn-glow:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px var(--primary-glow);
+    }
+
+    .btn-glow:active {
+      transform: translateY(0);
+    }
+
+    .btn-ghost {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-ghost:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--primary);
+    }
+
+    .btn-sm {
+      padding: 0.55rem 1rem;
+      font-size: 0.8rem;
+    }
+
+    .btn-full {
+      width: 100%;
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .wallet-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      color: var(--text-dim);
+    }
+
+    .wallet-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #34D399;
+    }
+
+    /* ===== HERO ===== */
+    .hero {
+      display: grid;
+      grid-template-columns: 1.3fr 0.7fr;
+      gap: 3rem;
+      align-items: center;
+      padding: 5rem 0 4rem;
+    }
+
+    .hero h1 {
+      font-size: 3.5rem;
+      line-height: 1.08;
+      font-weight: 800;
+      margin-bottom: 1.25rem;
+    }
+
+    .grad {
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-sub {
+      font-size: 1.15rem;
+      color: var(--text-dim);
+      margin-bottom: 2rem;
+      max-width: 520px;
+    }
+
+    .hero-stats {
+      display: flex;
+      gap: 2.5rem;
+    }
+
+    .hero-stat {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .hero-stat-val {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .hero-stat-lbl {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.15rem;
+    }
+
+    /* SBT Preview Card */
+    .sbt-preview {
+      background: linear-gradient(145deg, rgba(255, 75, 38, 0.08), rgba(124, 58, 237, 0.08));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      aspect-ratio: 3/4;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      animation: sbtFloat 6s ease-in-out infinite;
+      box-shadow: 0 0 60px rgba(255, 75, 38, 0.06);
+    }
+
+    .sbt-preview::before {
+      content: '';
+      position: absolute;
+      top: -100px;
+      right: -100px;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .sbt-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .sbt-tag {
+      font-family: 'Space Grotesk';
+      font-weight: 700;
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+    }
+
+    .sbt-verified {
+      background: var(--primary);
+      color: #fff;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 99px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .sbt-center {
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .sbt-emoji {
+      font-size: 3.5rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .sbt-tier {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 0.3rem;
+    }
+
+    .sbt-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .sbt-bottom {
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    @keyframes sbtFloat {
+
+      0%,
+      100% {
+        transform: translateY(0) rotate(0deg);
+      }
+
+      50% {
+        transform: translateY(-14px) rotate(1.5deg);
+      }
+    }
+
+    /* ===== GLASS CARD ===== */
+    .glass {
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+    }
+
+    .glass:hover {
+      border-color: var(--border-hover);
+    }
+
+    /* ===== SECTIONS ===== */
+    .section-title {
+      font-family: 'Space Grotesk';
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .section-title .icon {
+      font-size: 1.2rem;
+    }
+
+    /* ===== DASHBOARD GRID ===== */
+    .dash-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+      margin-bottom: 3rem;
+    }
+
+    .stat-card {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .stat-card .label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .stat-card .value {
+      font-size: 1.8rem;
+      font-weight: 700;
+    }
+
+    .stat-card .sub {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    .stat-accent {
+      color: var(--primary);
+    }
+
+    /* ===== ACTIONS ===== */
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+      margin-bottom: 3rem;
+    }
+
+    .action-card {
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .action-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .action-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .action-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .action-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    .action-desc {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      line-height: 1.5;
+      flex: 1;
+    }
+
+    .action-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-top: auto;
+    }
+
+    .action-fee {
+      font-size: 0.8rem;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .glass-input {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.65rem 0.85rem;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.85rem;
+      width: 100%;
+      transition: var(--transition);
+    }
+
+    .glass-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    .glass-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* ===== TREASURY ===== */
+    .treasury-banner {
+      padding: 2.5rem;
+      margin-bottom: 4rem;
+      background: linear-gradient(135deg, rgba(255, 75, 38, 0.06) 0%, rgba(124, 58, 237, 0.06) 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .treasury-banner::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--gradient);
+    }
+
+    .treasury-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+
+    .treasury-left h2 {
+      font-family: 'Space Grotesk';
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .treasury-left p {
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      max-width: 500px;
+    }
+
+    .treasury-amount {
+      font-size: 3rem;
+      font-weight: 800;
+      font-family: 'Space Grotesk';
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .treasury-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    /* ===== FOOTER ===== */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 0;
+      margin-top: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    .footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    /* ===== TOAST ===== */
+    .toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .toast {
+      padding: 0.85rem 1.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 0.85rem;
+      box-shadow: var(--shadow);
+      animation: toastIn 0.35s ease-out;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .toast.error {
+      border-color: #EF4444;
+    }
+
+    .toast.success {
+      border-color: #34D399;
+    }
+
+    @keyframes toastIn {
+      from {
+        transform: translateX(120%);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    /* ===== STATUS DOT ===== */
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .status-dot.live {
+      background: #34D399;
+      box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);
+    }
+
+    .status-dot.offline {
+      background: #EF4444;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 1024px) {
+      .hero {
+        grid-template-columns: 1fr;
+        text-align: center;
+        padding: 3rem 0 2rem;
+      }
+
+      .hero-sub {
+        margin: 0 auto 2rem;
+      }
+
+      .hero-stats {
+        justify-content: center;
+      }
+
+      .sbt-preview {
+        max-width: 280px;
+        margin: 0 auto;
+      }
+
+      .dash-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .hero h1 {
+        font-size: 2.5rem;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .dash-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .actions-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .treasury-inner {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .treasury-amount {
+        font-size: 2.2rem;
+      }
+
+      .treasury-sub {
+        text-align: center;
+      }
+
+      .footer {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+      }
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* ===== LOADING PULSE ===== */
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.4;
+      }
+    }
+
+    .loading {
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+
+    <!-- ===== NAVBAR ===== -->
+    <nav class="navbar">
+      <div class="container nav-inner">
+        <a href="#" class="logo">
+          <span class="logo-icon">🛡️</span>
+          <span class="logo-text">ProofOfBuilder</span>
+        </a>
+        <div class="nav-links">
+          <a href="#dashboard">Dashboard</a>
+          <a href="#actions">Actions</a>
+          <a href="#treasury">Treasury</a>
+        </div>
+        <div>
+          <button id="btn-connect" class="btn btn-glow btn-sm">Connect Wallet</button>
+          <div id="wallet-info" class="wallet-badge hidden">
+            <span class="wallet-dot"></span>
+            <span id="wallet-addr">SP2F...J3BT</span>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- ===== HERO ===== -->
+    <header class="container hero">
+      <div class="hero-content">
+        <h1>Build Your On-Chain<br><span class="grad">Legacy</span></h1>
+        <p class="hero-sub">The decentralized reputation engine for Stacks builders. Verify contributions, mint your
+          identity, and earn rewards from the protocol treasury.</p>
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <span class="hero-stat-val">9</span>
+            <span class="hero-stat-lbl">Contracts</span>
+          </div>
+          <div class="hero-stat">
+            <span class="hero-stat-val">Treasury</span>
+            <span class="hero-stat-lbl">Fee Pool</span>
+          </div>
+          <div class="hero-stat">
+            <span class="hero-stat-val">SBT</span>
+            <span class="hero-stat-lbl">Soulbound</span>
+          </div>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="sbt-preview">
+          <div class="sbt-top">
+            <span class="sbt-tag">BSBT</span>
+            <span class="sbt-verified" id="sbt-badge">Not Minted</span>
+          </div>
+          <div class="sbt-center">
+            <div class="sbt-emoji">🚀</div>
+            <div class="sbt-tier" id="sbt-tier">Builder</div>
+            <div class="sbt-desc" id="sbt-status">Connect wallet to begin</div>
+          </div>
+          <div class="sbt-bottom">
+            <span id="sbt-id">#0000</span>
+            <span class="status-indicator"><span class="status-dot live"></span> Stacks Mainnet</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===== DASHBOARD ===== -->
+    <section id="dashboard" class="container" style="margin-bottom: 3rem;">
+      <div class="section-title"><span class="icon">📊</span> Your Builder Dashboard</div>
+      <div class="dash-grid">
+        <div class="stat-card glass">
+          <span class="label">Reputation Score</span>
+          <span class="value stat-accent" id="ui-rep">0</span>
+          <span class="sub">Earned via on-chain activity</span>
+        </div>
+        <div class="stat-card glass">
+          <span class="label">Total Fees Spent</span>
+          <span class="value" id="ui-spent">0 STX</span>
+          <span class="sub">Tracked by Treasury</span>
+        </div>
+        <div class="stat-card glass">
+          <span class="label">Daily Check-ins</span>
+          <span class="value stat-accent" id="ui-checkins">0</span>
+          <span class="sub">24h enforced cooldown</span>
+        </div>
+        <div class="stat-card glass">
+          <span class="label">STX Staked</span>
+          <span class="value" id="ui-staked">0 STX</span>
+          <span class="sub">Commitment signal</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ACTIONS ===== -->
+    <section id="actions" class="container">
+      <div class="section-title"><span class="icon">⚡</span> Builder Actions</div>
+      <div class="actions-grid">
+
+        <!-- Check-in -->
+        <div class="action-card glass">
+          <div class="action-header">
+            <div class="action-icon">🔥</div>
+            <span class="action-title">Daily Heartbeat</span>
+          </div>
+          <p class="action-desc">Check in every 24 hours to build your on-chain streak. Fees go to the Treasury reward
+            pool.</p>
+          <div class="action-footer">
+            <span class="action-fee">0.03 STX</span>
+            <button id="btn-checkin" class="btn btn-ghost btn-sm">Check In</button>
+          </div>
+        </div>
+
+        <!-- Register -->
+        <div class="action-card glass">
+          <div class="action-header">
+            <div class="action-icon">🪪</div>
+            <span class="action-title">Identity Registry</span>
+          </div>
+          <p class="action-desc">Link your GitHub to your Stacks address. Become a verified builder in the ecosystem.
+          </p>
+          <input type="text" id="input-github" class="glass-input" placeholder="Your GitHub username">
+          <div class="action-footer">
+            <span class="action-fee">0.05 STX</span>
+            <button id="btn-register" class="btn btn-ghost btn-sm">Register</button>
+          </div>
+        </div>
+
+        <!-- Mint SBT -->
+        <div class="action-card glass">
+          <div class="action-header">
+            <div class="action-icon">🏅</div>
+            <span class="action-title">Mint Soulbound Token</span>
+          </div>
+          <p class="action-desc">Claim your non-transferable reputation badge. This SBT is permanently bound to your
+            wallet.</p>
+          <div class="action-footer">
+            <span class="action-fee">0.07 STX</span>
+            <button id="btn-sbt" class="btn btn-ghost btn-sm">Mint SBT</button>
+          </div>
+        </div>
+
+        <!-- Stake -->
+        <div class="action-card glass">
+          <div class="action-header">
+            <div class="action-icon">💎</div>
+            <span class="action-title">Stake STX</span>
+          </div>
+          <p class="action-desc">Lock STX to signal long-term commitment. Stakers receive priority in the reward
+            distribution.</p>
+          <input type="number" id="input-stake" class="glass-input" placeholder="Amount (min 1 STX)" min="1">
+          <div class="action-footer">
+            <span class="action-fee">0.04 STX fee</span>
+            <button id="btn-stake" class="btn btn-ghost btn-sm">Stake</button>
+          </div>
+        </div>
+
+        <!-- Verify -->
+        <div class="action-card glass">
+          <div class="action-header">
+            <div class="action-icon">✅</div>
+            <span class="action-title">Verify a Builder</span>
+          </div>
+          <p class="action-desc">Projects can verify contributor addresses on-chain. Creates a permanent proof of
+            collaboration.</p>
+          <input type="text" id="input-verify" class="glass-input" placeholder="Builder STX address">
+          <div class="action-footer">
+            <span class="action-fee">0.10 STX</span>
+            <button id="btn-verify" class="btn btn-ghost btn-sm">Verify</button>
+          </div>
+        </div>
+
+        <!-- Withdraw (Owner) -->
+        <div class="action-card glass" id="owner-panel">
+          <div class="action-header">
+            <div class="action-icon">🏦</div>
+            <span class="action-title">Treasury Rewards</span>
+          </div>
+          <p class="action-desc">Owner: distribute accumulated treasury fees to top builders after the event ends.</p>
+          <input type="text" id="input-reward-addr" class="glass-input" placeholder="Recipient address">
+          <input type="number" id="input-reward-amt" class="glass-input" placeholder="Amount (micro-STX)"
+            style="margin-top:0.5rem;">
+          <div class="action-footer">
+            <span class="action-fee">Owner Only</span>
+            <button id="btn-reward" class="btn btn-glow btn-sm">Send Reward</button>
+          </div>
+        </div>
+
+        <!-- STX-USDC Swap -->
+        <div class="action-card glass">
+          <div class="action-header">
+            <div class="action-icon">💱</div>
+            <span class="action-title">STX-USDC Swap</span>
+          </div>
+          <p class="action-desc">Create OTC sell orders for STX at your desired USDC price. Trustless, on-chain order
+            book.</p>
+          <input type="number" id="input-swap-stx" class="glass-input" placeholder="STX to sell" min="0.1">
+          <input type="number" id="input-swap-price" class="glass-input" placeholder="Price per STX (micro-USDC)"
+            style="margin-top:0.5rem;">
+          <div class="action-footer">
+            <span class="action-fee">0.05 STX fee</span>
+            <button id="btn-swap" class="btn btn-ghost btn-sm">Create Order</button>
+          </div>
+        </div>
+
+        <!-- sBTC Escrow -->
+        <div class="action-card glass">
+          <div class="action-header">
+            <div class="action-icon">₿</div>
+            <span class="action-title">sBTC Bridge Escrow</span>
+          </div>
+          <p class="action-desc">Lock STX in a trustless escrow requesting sBTC in return. Time-locked with auto-reclaim
+            after expiry.</p>
+          <input type="number" id="input-escrow-stx" class="glass-input" placeholder="STX to lock" min="1">
+          <input type="number" id="input-escrow-sbtc" class="glass-input" placeholder="sBTC requested (sats)"
+            style="margin-top:0.5rem;">
+          <div class="action-footer">
+            <span class="action-fee">0.08 STX fee</span>
+            <button id="btn-escrow" class="btn btn-ghost btn-sm">Create Escrow</button>
+          </div>
+        </div>
+
+        <!-- Builder Bounties -->
+        <div class="action-card glass">
+          <div class="action-header">
+            <div class="action-icon">🎯</div>
+            <span class="action-title">Builder Bounties</span>
+          </div>
+          <p class="action-desc">Post bounties with STX rewards for open-source contributions. Funds escrowed until
+            approved.</p>
+          <input type="number" id="input-bounty-reward" class="glass-input" placeholder="Reward in STX" min="0.5">
+          <input type="text" id="input-bounty-desc" class="glass-input" placeholder="Bounty description"
+            style="margin-top:0.5rem;" maxlength="100">
+          <div class="action-footer">
+            <span class="action-fee">0.06 STX fee</span>
+            <button id="btn-bounty" class="btn btn-ghost btn-sm">Post Bounty</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===== TREASURY ===== -->
+    <section id="treasury" class="container">
+      <div class="treasury-banner glass">
+        <div class="treasury-inner">
+          <div class="treasury-left">
+            <h2>🏦 Protocol Treasury</h2>
+            <p>All contract fees are routed here. After the Builder Rewards event ends, the top contributors by fees
+              spent will receive their share of the pool.</p>
+          </div>
+          <div style="text-align: right;">
+            <div class="treasury-amount" id="ui-treasury">0.00 STX</div>
+            <div class="treasury-sub">Total Fees Collected</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="container footer">
+      <span>© 2026 ProofOfBuilder — Built on <a href="https://stacks.co" target="_blank">Stacks</a></span>
+      <span class="status-indicator"><span class="status-dot live"></span> Mainnet</span>
+    </footer>
+
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toasts" class="toast-container"></div>
+
+  <!-- Stacks Connect via CDN -->
+  <script src="https://unpkg.com/@stacks/connect@latest/dist/umd/index.umd.js"></script>
+  <script src="https://unpkg.com/@stacks/network@latest/dist/umd/index.umd.js"></script>
+  <script src="https://unpkg.com/@stacks/transactions@latest/dist/umd/index.umd.js"></script>
+
+  <script>
+    // ===== CONFIG =====
+    // UPDATE THESE after deploying your contracts
+    const DEPLOYER = 'SP2F50MRY60R8DPW8T613YYAX04YV8CP06Y77J3BT';
+    const C = {
+      treasury: { addr: DEPLOYER, name: 'treasury' },
+      checkin: { addr: DEPLOYER, name: 'daily-check-in' },
+      registry: { addr: DEPLOYER, name: 'proof-of-builder' },
+      sbt: { addr: DEPLOYER, name: 'builder-sbt' },
+      staking: { addr: DEPLOYER, name: 'builder-staking' },
+      verifier: { addr: DEPLOYER, name: 'project-verifier' },
+      swap: { addr: DEPLOYER, name: 'stx-swap' },
+      escrow: { addr: DEPLOYER, name: 'sbtc-escrow' },
+      bounties: { addr: DEPLOYER, name: 'builder-bounties' },
+    };
+
+    // ===== STACKS SETUP =====
+    const appConfig = new StacksConnect.AppConfig(['store_write', 'publish_data']);
+    const userSession = new StacksConnect.UserSession({ appConfig });
+
+    let userAddress = null;
+
+    // ===== UI ELEMENTS =====
+    const $ = id => document.getElementById(id);
+
+    // ===== TOAST =====
+    function toast(msg, type = 'info') {
+      const el = document.createElement('div');
+      el.className = 'toast ' + type;
+      el.textContent = (type === 'success' ? '✅ ' : type === 'error' ? '❌ ' : 'ℹ️ ') + msg;
+      $('toasts').appendChild(el);
+      setTimeout(() => el.remove(), 5000);
+    }
+
+    // ===== WALLET =====
+    $('btn-connect').addEventListener('click', () => {
+      StacksConnect.showConnect({
+        appDetails: { name: 'ProofOfBuilder', icon: 'https://stacks.co/favicon.ico' },
+        onFinish: () => {
+          const data = userSession.loadUserData();
+          userAddress = data.profile.stxAddress.mainnet;
+          $('btn-connect').classList.add('hidden');
+          $('wallet-info').classList.remove('hidden');
+          $('wallet-addr').textContent = userAddress.substring(0, 5) + '...' + userAddress.slice(-4);
+          $('sbt-status').textContent = 'Wallet connected';
+          toast('Wallet connected!', 'success');
+          refreshDashboard();
+        },
+        userSession,
+      });
+    });
+
+    // Auto-connect
+    if (userSession.isUserSignedIn()) {
+      const data = userSession.loadUserData();
+      userAddress = data.profile.stxAddress.mainnet;
+      $('btn-connect').classList.add('hidden');
+      $('wallet-info').classList.remove('hidden');
+      $('wallet-addr').textContent = userAddress.substring(0, 5) + '...' + userAddress.slice(-4);
+      refreshDashboard();
+    }
+
+    // ===== HELPERS =====
+    function getOpenContractCall() {
+      if (window.StacksConnect && window.StacksConnect.openContractCall) return window.StacksConnect.openContractCall;
+      if (window.openContractCall) return window.openContractCall;
+      return null;
+    }
+
+    function requireWallet() {
+      if (!userAddress) { toast('Connect your wallet first', 'error'); return false; }
+      return true;
+    }
+
+    function callContract(contract, fn, args, postConditions, onDone) {
+      if (!requireWallet()) return;
+      const call = getOpenContractCall();
+      if (!call) { toast('Stacks Connect library not loaded', 'error'); return; }
+
+      const opts = {
+        contractAddress: contract.addr,
+        contractName: contract.name,
+        functionName: fn,
+        functionArgs: args,
+        postConditionMode: 0x02, // Deny
+        postConditions: postConditions || [],
+        network: new StacksNetwork.StacksMainnet(),
+        appDetails: { name: 'ProofOfBuilder', icon: 'https://stacks.co/favicon.ico' },
+        onFinish: (data) => {
+          toast('Transaction broadcasted! TX: ' + data.txId.substring(0, 12) + '...', 'success');
+          if (onDone) onDone(data);
+        },
+        onCancel: () => toast('Transaction cancelled', 'error'),
+      };
+
+      call(opts);
+    }
+
+    // ===== ACTION HANDLERS =====
+
+    // Daily Check-in (0.03 STX)
+    $('btn-checkin').addEventListener('click', () => {
+      const fee = 30000;
+      callContract(C.checkin, 'check-in', [], [
+        StacksTransactions.makeStandardSTXPostCondition(
+          userAddress, StacksTransactions.FungibleConditionCode.Equal, fee
+        )
+      ]);
+    });
+
+    // Register Builder (0.05 STX)
+    $('btn-register').addEventListener('click', () => {
+      const github = $('input-github').value.trim();
+      if (!github) { toast('Enter your GitHub username', 'error'); return; }
+      const fee = 50000;
+      callContract(C.registry, 'register-builder',
+        [StacksTransactions.stringAsciiCV(github)],
+        [StacksTransactions.makeStandardSTXPostCondition(
+          userAddress, StacksTransactions.FungibleConditionCode.Equal, fee
+        )]
+      );
+    });
+
+    // Mint SBT (0.07 STX)
+    $('btn-sbt').addEventListener('click', () => {
+      const fee = 70000;
+      callContract(C.sbt, 'mint-sbt', [], [
+        StacksTransactions.makeStandardSTXPostCondition(
+          userAddress, StacksTransactions.FungibleConditionCode.Equal, fee
+        )
+      ]);
+    });
+
+    // Stake STX (min 1 STX + 0.04 STX fee)
+    $('btn-stake').addEventListener('click', () => {
+      const amt = parseFloat($('input-stake').value);
+      if (!amt || amt < 1) { toast('Minimum stake is 1 STX', 'error'); return; }
+      const stakeAmt = Math.floor(amt * 1000000);
+      const fee = 40000;
+      callContract(C.staking, 'stake-stx',
+        [StacksTransactions.uintCV(stakeAmt)],
+        [StacksTransactions.makeStandardSTXPostCondition(
+          userAddress, StacksTransactions.FungibleConditionCode.Equal, stakeAmt + fee
+        )]
+      );
+    });
+
+    // Verify Builder (0.10 STX)
+    $('btn-verify').addEventListener('click', () => {
+      const addr = $('input-verify').value.trim();
+      if (!addr) { toast('Enter builder address', 'error'); return; }
+      const fee = 100000;
+      callContract(C.verifier, 'verify-builder',
+        [StacksTransactions.standardPrincipalCV(addr)],
+        [StacksTransactions.makeStandardSTXPostCondition(
+          userAddress, StacksTransactions.FungibleConditionCode.Equal, fee
+        )]
+      );
+    });
+
+    // Send Reward (Owner Only)
+    $('btn-reward').addEventListener('click', () => {
+      const recipient = $('input-reward-addr').value.trim();
+      const amt = parseInt($('input-reward-amt').value);
+      if (!recipient || !amt) { toast('Fill in both fields', 'error'); return; }
+      callContract(C.treasury, 'withdraw-for-rewards',
+        [StacksTransactions.uintCV(amt), StacksTransactions.standardPrincipalCV(recipient)],
+        []
+      );
+    });
+
+    // STX-USDC Swap (0.05 STX fee + STX being sold)
+    $('btn-swap').addEventListener('click', () => {
+      const stxAmt = parseFloat($('input-swap-stx').value);
+      const price = parseInt($('input-swap-price').value);
+      if (!stxAmt || stxAmt <= 0) { toast('Enter STX amount to sell', 'error'); return; }
+      if (!price || price <= 0) { toast('Enter price per STX', 'error'); return; }
+      const stxMicro = Math.floor(stxAmt * 1000000);
+      const fee = 50000;
+      callContract(C.swap, 'create-sell-order',
+        [StacksTransactions.uintCV(stxMicro), StacksTransactions.uintCV(price)],
+        [StacksTransactions.makeStandardSTXPostCondition(
+          userAddress, StacksTransactions.FungibleConditionCode.Equal, stxMicro + fee
+        )]
+      );
+    });
+
+    // sBTC Bridge Escrow (0.08 STX fee + STX locked)
+    $('btn-escrow').addEventListener('click', () => {
+      const stxAmt = parseFloat($('input-escrow-stx').value);
+      const sbtcAmt = parseInt($('input-escrow-sbtc').value);
+      if (!stxAmt || stxAmt < 1) { toast('Minimum 1 STX to lock', 'error'); return; }
+      if (!sbtcAmt || sbtcAmt <= 0) { toast('Enter sBTC amount requested', 'error'); return; }
+      const stxMicro = Math.floor(stxAmt * 1000000);
+      const fee = 80000;
+      callContract(C.escrow, 'create-escrow',
+        [StacksTransactions.uintCV(stxMicro), StacksTransactions.uintCV(sbtcAmt)],
+        [StacksTransactions.makeStandardSTXPostCondition(
+          userAddress, StacksTransactions.FungibleConditionCode.Equal, stxMicro + fee
+        )]
+      );
+    });
+
+    // Builder Bounties (0.06 STX fee + reward)
+    $('btn-bounty').addEventListener('click', () => {
+      const reward = parseFloat($('input-bounty-reward').value);
+      const desc = $('input-bounty-desc').value.trim();
+      if (!reward || reward <= 0) { toast('Enter bounty reward', 'error'); return; }
+      if (!desc) { toast('Enter bounty description', 'error'); return; }
+      const rewardMicro = Math.floor(reward * 1000000);
+      const fee = 60000;
+      callContract(C.bounties, 'post-bounty',
+        [StacksTransactions.uintCV(rewardMicro), StacksTransactions.stringAsciiCV(desc)],
+        [StacksTransactions.makeStandardSTXPostCondition(
+          userAddress, StacksTransactions.FungibleConditionCode.Equal, rewardMicro + fee
+        )]
+      );
+    });
+
+    // ===== READ DATA =====
+    async function refreshDashboard() {
+      if (!userAddress) return;
+      const apiBase = 'https://stacks-node-api.mainnet.stacks.co';
+
+      try {
+        // Check-in count
+        const checkinRes = await fetch(`${apiBase}/v2/contracts/call-read/${C.checkin.addr}/${C.checkin.name}/get-check-in-count`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sender: userAddress, arguments: [StacksTransactions.cvToHex(StacksTransactions.standardPrincipalCV(userAddress))] })
+        });
+        if (checkinRes.ok) {
+          const d = await checkinRes.json();
+          if (d.okay) {
+            const val = StacksTransactions.cvToValue(StacksTransactions.hexToCV(d.result));
+            $('ui-checkins').textContent = val.toString();
+          }
+        }
+
+        // Total spent in Treasury
+        const spentRes = await fetch(`${apiBase}/v2/contracts/call-read/${C.treasury.addr}/${C.treasury.name}/get-total-spent`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sender: userAddress, arguments: [StacksTransactions.cvToHex(StacksTransactions.standardPrincipalCV(userAddress))] })
+        });
+        if (spentRes.ok) {
+          const d = await spentRes.json();
+          if (d.okay) {
+            const val = parseInt(StacksTransactions.cvToValue(StacksTransactions.hexToCV(d.result)));
+            $('ui-spent').textContent = (val / 1000000).toFixed(2) + ' STX';
+          }
+        }
+
+        // Builder profile (reputation)
+        const profRes = await fetch(`${apiBase}/v2/contracts/call-read/${C.registry.addr}/${C.registry.name}/get-builder`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sender: userAddress, arguments: [StacksTransactions.cvToHex(StacksTransactions.standardPrincipalCV(userAddress))] })
+        });
+        if (profRes.ok) {
+          const d = await profRes.json();
+          if (d.okay) {
+            const cv = StacksTransactions.hexToCV(d.result);
+            if (cv.type === 10) { // some
+              const profile = StacksTransactions.cvToValue(cv);
+              $('ui-rep').textContent = profile.reputation?.value?.toString() || '0';
+            }
+          }
+        }
+
+        // Staked amount
+        const stakeRes = await fetch(`${apiBase}/v2/contracts/call-read/${C.staking.addr}/${C.staking.name}/get-stake`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sender: userAddress, arguments: [StacksTransactions.cvToHex(StacksTransactions.standardPrincipalCV(userAddress))] })
+        });
+        if (stakeRes.ok) {
+          const d = await stakeRes.json();
+          if (d.okay) {
+            const val = parseInt(StacksTransactions.cvToValue(StacksTransactions.hexToCV(d.result)));
+            $('ui-staked').textContent = (val / 1000000).toFixed(2) + ' STX';
+          }
+        }
+
+        // Treasury balance
+        const balRes = await fetch(`${apiBase}/extended/v1/address/${C.treasury.addr}.${C.treasury.name}/stx`);
+        if (balRes.ok) {
+          const d = await balRes.json();
+          const bal = parseInt(d.balance || '0');
+          $('ui-treasury').textContent = (bal / 1000000).toFixed(2) + ' STX';
+        }
+
+      } catch (e) {
+        console.log('Dashboard refresh error (contracts may not be deployed yet):', e);
+      }
+    }
+
+    // Refresh every 30s
+    setInterval(() => { if (userAddress) refreshDashboard(); }, 30000);
+  </script>
+</body>
+
+</html>

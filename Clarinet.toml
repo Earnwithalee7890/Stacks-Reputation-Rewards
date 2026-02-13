@@ -6,12 +6,12 @@ telemetry = true
 cache_dir = "./.cache"
 requirements = []
 
-[contracts.nft-trait]
+[contracts.SIP-009]
 path = "contracts/nft-trait.clar"
 clarity_version = 2
 epoch = 2.5
 
-[contracts.treasury]
+[contracts.ProofOfBuilder-Treasury]
 path = "contracts/treasury.clar"
 clarity_version = 2
 epoch = 2.5
