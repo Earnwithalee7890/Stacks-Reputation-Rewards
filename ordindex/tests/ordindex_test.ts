@@ -1,51 +1,70 @@
 
 import { Clarinet, Tx, Chain, Account, types } from 'https://deno.land/x/clarinet@v1.0.0/index.ts';
-import { assertEquals } from 'https://deno.land/std@0.090.0/testing/asserts.ts';
+import { assertEquals } from 'https://deno.land/std/testing/asserts.ts';
 
 Clarinet.test({
-    name: "Ensure that user can register an inscription",
+    name: "create-collection: creates new collection and increments nonce",
     async fn(chain: Chain, accounts: Map<string, Account>) {
-        const deployer = accounts.get('deployer')!;
         const wallet1 = accounts.get('wallet_1')!;
-        const inscriptionId = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
-        const metadata = "My First Ordinal";
 
         let block = chain.mineBlock([
-            Tx.contractCall('ordindex', 'register-inscription', [
-                types.buff(inscriptionId),
-                types.utf8(metadata)
+            Tx.contractCall('ordindex', 'create-collection', [types.utf8("Stacks Punks")], wallet1.address)
+        ]);
+
+        block.receipts[0].result.expectOk().expectUint(1);
+    }
+});
+
+Clarinet.test({
+    name: "register-ordinal: links to collection and increments supply",
+    async fn(chain: Chain, accounts: Map<string, Account>) {
+        const wallet1 = accounts.get('wallet_1')!;
+
+        // Create collection (ID 1)
+        chain.mineBlock([
+            Tx.contractCall('ordindex', 'create-collection', [types.utf8("Stacks Punks")], wallet1.address)
+        ]);
+
+        let block = chain.mineBlock([
+            Tx.contractCall('ordindex', 'register-ordinal', [
+                types.uint(100),
+                types.utf8("ipfs://metadata"),
+                types.some(types.uint(1))
             ], wallet1.address)
         ]);
 
         block.receipts[0].result.expectOk().expectBool(true);
-    },
+
+        // Verify supply
+        const collection = chain.callReadOnlyFn('ordindex', 'get-collection', [types.uint(1)], wallet1.address);
+        const data = collection.result.expectSome().expectTuple();
+        assertEquals(data['total-supply'], types.uint(1));
+    }
 });
 
 Clarinet.test({
-    name: "Ensure that duplicates cannot be registered",
+    name: "remove-ordinal: admin can remove and decrement supply",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const deployer = accounts.get('deployer')!;
         const wallet1 = accounts.get('wallet_1')!;
-        const wallet2 = accounts.get('wallet_2')!;
-        const inscriptionId = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 
-        // 1. Register first time
+        // Create & Register
         chain.mineBlock([
-            Tx.contractCall('ordindex', 'register-inscription', [
-                types.buff(inscriptionId),
-                types.utf8("Original")
+            Tx.contractCall('ordindex', 'create-collection', [types.utf8("Stacks Punks")], wallet1.address),
+            Tx.contractCall('ordindex', 'register-ordinal', [
+                types.uint(100), types.utf8("ipfs://metadata"), types.some(types.uint(1))
             ], wallet1.address)
         ]);
 
-        // 2. Try to register again
         let block = chain.mineBlock([
-            Tx.contractCall('ordindex', 'register-inscription', [
-                types.buff(inscriptionId),
-                types.utf8("Copy")
-            ], wallet2.address)
+            Tx.contractCall('ordindex', 'remove-ordinal', [types.uint(100)], deployer.address)
         ]);
 
-        // Expect error u100 (err-inscription-already-registered)
-        block.receipts[0].result.expectErr().expectUint(100);
-    },
+        block.receipts[0].result.expectOk().expectBool(true);
+
+        // Verify supply is back to 0
+        const collection = chain.callReadOnlyFn('ordindex', 'get-collection', [types.uint(1)], wallet1.address);
+        const data = collection.result.expectSome().expectTuple();
+        assertEquals(data['total-supply'], types.uint(0));
+    }
 });
