@@ -54,7 +54,7 @@ function init() {
 async function handleConnect() {
   showConnect({
     appDetails: {
-      name: 'ProofOfBuilder',
+      name: 'EarnWithAlee',
       icon: window.location.origin + '/vite.svg',
     },
     redirectTo: '/',
