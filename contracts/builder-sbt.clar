@@ -53,3 +53,5 @@
 (define-read-only (get-token-by-owner (owner principal))
   (map-get? MintedBy owner)
 )
+
+;; Incremental refinement pass 2
