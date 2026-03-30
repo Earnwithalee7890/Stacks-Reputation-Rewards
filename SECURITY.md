@@ -13,3 +13,5 @@ You can contact us via:
 - GitHub: [Private Reporting](https://github.com/Earnwithalee7890/Stacks-Reputation-Rewards/security/advisories/new)
 
 We will respond within 48-72 hours to acknowledge your report and discuss the next steps.
+
+<!-- Metadata refinement 20 -->
