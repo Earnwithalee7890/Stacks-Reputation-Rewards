@@ -58,3 +58,5 @@
     (or (is-eq last-block u0) (>= stacks-block-height (+ last-block DAY_IN_BLOCKS)))
   )
 )
+
+;; Incremental refinement pass 5
