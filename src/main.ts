@@ -1,28 +1,20 @@
 import './style.css'
 import { AppConfig, UserSession, showConnect } from '@stacks/connect';
 import {
-  StacksMainnet,
-  StacksTestnet
+  STACKS_MAINNET
 } from '@stacks/network';
 import {
-  AnchorMode,
-  PostConditionMode,
   uintCV,
   stringAsciiCV,
-  callReadOnlyFunction,
-  cvToValue,
-  FungibleConditionCode,
-  makeStandardSTXPostCondition,
+  fetchCallReadOnlyFunction,
 } from '@stacks/transactions';
 
 // Configuration
 const appConfig = new AppConfig(['store_write', 'publish_data']);
 const userSession = new UserSession({ appConfig });
-const network = new StacksMainnet(); // Change to StacksTestnet() for testing
+const network = STACKS_MAINNET;
 
 // Placeholders for deployed contract addresses
-// The USER should update these after deployment
-const CONTRACT_OWNER = 'SP2F50MRY60R8DPW8T613YYAX04YV8CP06Y77J3BT'; // Example
 const CONTRACTS = {
   TREASURY: 'SP2F50MRY60R8DPW8T613YYAX04YV8CP06Y77J3BT.treasury',
   DAILY_CHECKIN: 'SP2F50MRY60R8DPW8T613YYAX04YV8CP06Y77J3BT.daily-check-in',
@@ -42,11 +34,6 @@ const btnRegister = document.getElementById('btn-register') as HTMLButtonElement
 const btnMintSBT = document.getElementById('btn-mint-sbt') as HTMLButtonElement;
 const btnStake = document.getElementById('btn-stake') as HTMLButtonElement;
 const githubInput = document.getElementById('github-input') as HTMLInputElement;
-
-const repScoreElem = document.getElementById('rep-score') as HTMLSpanElement;
-const totalSpentElem = document.getElementById('total-spent') as HTMLSpanElement;
-const checkinCountElem = document.getElementById('checkin-count') as HTMLSpanElement;
-const treasuryTotalElem = document.getElementById('treasury-total') as HTMLSpanElement;
 
 // Initialization
 function init() {
@@ -91,19 +78,16 @@ function showUserDetails(address: string) {
 async function handleCheckin() {
   if (!userSession.isUserSignedIn()) return notify('Please connect wallet first', 'error');
 
-  const fee = 30000; // 0.03 STX
-  const address = userSession.loadUserData().profile.stxAddress.mainnet;
-
   try {
-    await (window as any).StacksProvider.authenticationRequest({
+    const { openContractCall } = await import('@stacks/connect');
+    await openContractCall({
+      network,
       contractAddress: CONTRACTS.DAILY_CHECKIN.split('.')[0],
       contractName: CONTRACTS.DAILY_CHECKIN.split('.')[1],
       functionName: 'check-in',
       functionArgs: [],
-      postConditions: [
-        makeStandardSTXPostCondition(address, FungibleConditionCode.Equal, fee)
-      ],
-      onFinish: (data: any) => {
+      postConditions: [],
+      onFinish: (data) => {
         notify('Transaction Broadcasted!');
         console.log('TX:', data.txId);
       }
@@ -119,9 +103,6 @@ async function handleRegister() {
   if (!github) return notify('Please enter GitHub username');
   if (!userSession.isUserSignedIn()) return notify('Please connect wallet first', 'error');
 
-  const fee = 50000; // 0.05 STX
-  const address = userSession.loadUserData().profile.stxAddress.mainnet;
-
   try {
     // Using openContractCall from @stacks/connect
     const { openContractCall } = await import('@stacks/connect');
@@ -131,9 +112,7 @@ async function handleRegister() {
       contractName: CONTRACTS.POB_REGISTRY.split('.')[1],
       functionName: 'register-builder',
       functionArgs: [stringAsciiCV(github)],
-      postConditions: [
-        makeStandardSTXPostCondition(address, FungibleConditionCode.Equal, fee)
-      ],
+      postConditions: [],
       onFinish: (data) => {
         notify('Registration Broadcasted!');
         console.log('TX:', data.txId);
@@ -146,8 +125,6 @@ async function handleRegister() {
 
 async function handleMintSBT() {
   if (!userSession.isUserSignedIn()) return notify('Please connect wallet first', 'error');
-  const fee = 70000; // 0.07 STX
-  const address = userSession.loadUserData().profile.stxAddress.mainnet;
 
   try {
     const { openContractCall } = await import('@stacks/connect');
@@ -157,19 +134,17 @@ async function handleMintSBT() {
       contractName: CONTRACTS.BUILDER_SBT.split('.')[1],
       functionName: 'mint-sbt',
       functionArgs: [],
-      postConditions: [
-        makeStandardSTXPostCondition(address, FungibleConditionCode.Equal, fee)
-      ],
-      onFinish: (data) => notify('Minting Broadcasted!')
+      postConditions: [],
+      onFinish: () => notify('Minting Broadcasted!')
     });
-  } catch (e) { }
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 async function handleStake() {
   if (!userSession.isUserSignedIn()) return notify('Please connect wallet first', 'error');
-  const actionFee = 40000; // 0.04 STX
   const stakeAmount = 1000000; // 1 STX min
-  const address = userSession.loadUserData().profile.stxAddress.mainnet;
 
   try {
     const { openContractCall } = await import('@stacks/connect');
@@ -179,12 +154,12 @@ async function handleStake() {
       contractName: CONTRACTS.STAKING.split('.')[1],
       functionName: 'stake-stx',
       functionArgs: [uintCV(stakeAmount)],
-      postConditions: [
-        makeStandardSTXPostCondition(address, FungibleConditionCode.Equal, stakeAmount + actionFee)
-      ],
-      onFinish: (data) => notify('Staking Broadcasted!')
+      postConditions: [],
+      onFinish: () => notify('Staking Broadcasted!')
     });
-  } catch (e) { }
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 // Read Data Logic
@@ -194,19 +169,16 @@ async function refreshData() {
 
   try {
     // Get Stats from Registry
-    const repResult = await callReadOnlyFunction({
+    const repResult = await fetchCallReadOnlyFunction({
       network,
       contractAddress: CONTRACTS.POB_REGISTRY.split('.')[0],
       contractName: CONTRACTS.POB_REGISTRY.split('.')[1],
       functionName: 'get-builder',
-      functionArgs: [stringAsciiCV(address)], // Note: Principal CV should be used, but simplified for now
+      functionArgs: [stringAsciiCV(address)], 
       senderAddress: address
     });
     // Update UI (simplified, error handling needed)
     console.log('Registry Data:', repResult);
-
-    // Get Total Spent from Treasury
-    // ... logic to call treasury get-total-spent
   } catch (e) {
     console.log('Contracts not deployed or network error');
   }
@@ -215,6 +187,7 @@ async function refreshData() {
 // Utilities
 function notify(msg: string, type: 'info' | 'error' = 'info') {
   const container = document.getElementById('notifications')!;
+  if (!container) return;
   const toast = document.createElement('div');
   toast.className = `notification ${type}`;
   toast.textContent = msg;
