@@ -7,7 +7,7 @@
 [![Bitcoin L2](https://img.shields.io/badge/Bitcoin-Layer%202-F7931A?style=flat-square)](https://stacks.co)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
-**Tags:** `Stacks` · `Clarity` · `Bitcoin Layer 2` · `DeFi` · `sBTC` · `SBT` · `Reputation`
+**Tags:** `Stacks` · `Clarity` · `Bitcoin Layer 2` · `DeFi` · `sBTC` · `SBT` · `Reputation` · `Talent Protocol`
 
 ---
 
@@ -217,7 +217,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
-**Built for the Stacks Builder Rewards: February 2026** 🚀
+**Built for the Stacks Builder Rewards: April 2026** 🚀
 
 *EarnWithAlee is infrastructure for the Stacks ecosystem. If you're building on Bitcoin L2, your reputation should live on-chain.*
 
