@@ -12,6 +12,10 @@ You can contact us via:
 - Discord: [Stacks Discord](https://discord.gg/stacks)
 - GitHub: [Private Reporting](https://github.com/Earnwithalee7890/Stacks-Reputation-Rewards/security/advisories/new)
 
-We will respond within 48-72 hours to acknowledge your report and discuss the next steps.
+## Bug Bounty Program
 
-<!-- Metadata refinement 20 -->
+We offer rewards for responsibly disclosed critical vulnerabilities that affect user funds or contract integrity. Rewards are paid in STX from the community treasury based on the severity of the issue (Low/Medium/High/Critical).
+
+For more details on what constitutes a reward-eligible vulnerability, please contact the maintainers.
+
+<!-- Metadata refinement 21 -->
