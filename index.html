@@ -1062,8 +1062,8 @@
 
     console.log("EarnWithAlee: Stacks Modules Loaded (Native ESM)");
 
-    // CONFIG
-    const DEPLOYER = 'SP2F50MRY60R8DPW8T613YYAX04YV8CP06Y77J3BT';
+    // CONFIG - CORRECTED TO USER'S ACTUAL MAINNET ADDRESS
+    const DEPLOYER = 'SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT';
     const C = {
       treasury: { addr: DEPLOYER, name: 'treasury' },
       checkin: { addr: DEPLOYER, name: 'daily-check-in' },
@@ -1186,7 +1186,7 @@
       const fee = 40000;
       callContract(C.staking, 'stake-stx',
         [Cl.uint(stakeAmt)],
-        [Pc.principal(userAddress).willSendEq(stakeAmt + fee).ustx()]
+        [Pc.principal(userAddress).willSendEq(BigInt(stakeAmt + fee)).ustx()]
       );
     });
 
@@ -1196,7 +1196,7 @@
       const fee = 100000;
       callContract(C.verifier, 'verify-builder',
         [Cl.principal(addr)],
-        [Pc.principal(userAddress).willSendEq(fee).ustx()]
+        [Pc.principal(userAddress).willSendEq(BigInt(fee)).ustx()]
       );
     });
 
@@ -1216,7 +1216,7 @@
       const fee = 50000;
       callContract(C.swap, 'create-sell-order',
         [Cl.uint(stxMicro), Cl.uint(price)],
-        [Pc.principal(userAddress).willSendEq(stxMicro + fee).ustx()]
+        [Pc.principal(userAddress).willSendEq(BigInt(stxMicro + fee)).ustx()]
       );
     });
 
@@ -1229,7 +1229,7 @@
       const fee = 80000;
       callContract(C.escrow, 'create-escrow',
         [Cl.uint(stxMicro), Cl.uint(sbtcAmt)],
-        [Pc.principal(userAddress).willSendEq(stxMicro + fee).ustx()]
+        [Pc.principal(userAddress).willSendEq(BigInt(stxMicro + fee)).ustx()]
       );
     });
 
@@ -1242,7 +1242,7 @@
       const fee = 60000;
       callContract(C.bounties, 'post-bounty',
         [Cl.uint(rewardMicro), Cl.stringAscii(desc)],
-        [Pc.principal(userAddress).willSendEq(rewardMicro + fee).ustx()]
+        [Pc.principal(userAddress).willSendEq(BigInt(rewardMicro + fee)).ustx()]
       );
     });
 
