@@ -1031,6 +1031,20 @@
           </div>
         </div>
       </div>
+      
+      <!-- Contract Diagnostics Card -->
+      <div class="treasury-banner glass" style="margin-top: 2rem; border-color: rgba(249, 115, 22, 0.2); background: radial-gradient(circle at top right, rgba(249, 115, 22, 0.1), transparent);">
+        <div class="treasury-inner">
+          <div class="treasury-left">
+            <h2 style="color: #f97316;">⚙️ Contract Diagnostics</h2>
+            <p style="color: #94a3b8; max-width: 500px;">If you see "Not a valid contract" in Leather, enter the <strong>Exact Contract Name</strong> you used in Hiro Explorer (e.g., <code>nakamoto-transition</code> or <code>signal-transition-v2</code>):</p>
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem; width: 100%; max-width: 500px;">
+              <input type="text" id="input-custom-name" style="flex: 1; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem; color: white; outline: none;" placeholder="Contract ID">
+              <button id="btn-update-name" style="background: #f97316; color: white; border: none; border-radius: 12px; padding: 0 1.5rem; font-weight: bold; cursor: pointer;">Update</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- ===== FOOTER ===== -->
@@ -1064,7 +1078,11 @@
 
     // CONFIG - CORRECTED TO USER'S ACTUAL MAINNET ADDRESS
     const DEPLOYER = 'SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT';
-    const C = {
+    
+    // Dynamic naming support
+    let customContractName = localStorage.getItem('custom_contract_name') || 'nakamoto-transition';
+
+    const getC = () => ({
       treasury: { addr: DEPLOYER, name: 'treasury' },
       checkin: { addr: DEPLOYER, name: 'daily-check-in' },
       registry: { addr: DEPLOYER, name: 'proof-of-builder' },
@@ -1074,13 +1092,25 @@
       swap: { addr: DEPLOYER, name: 'stx-swap' },
       escrow: { addr: DEPLOYER, name: 'sbtc-escrow' },
       bounties: { addr: DEPLOYER, name: 'builder-bounties' },
-      transition: { addr: DEPLOYER, name: 'nakamoto-transition' }, // User's preferred name
-    };
+      transition: { addr: DEPLOYER, name: customContractName },
+    });
 
     // ===== STACKS SETUP =====
     const appConfig = new AppConfig(['store_write', 'publish_data']);
     const userSession = new UserSession({ appConfig });
     let userAddress = null;
+
+    // ===== DYNAMIC CONFIG =====
+    $('input-custom-name').value = customContractName;
+    $('btn-update-name').addEventListener('click', () => {
+      const newName = $('input-custom-name').value.trim();
+      if (newName) {
+        customContractName = newName;
+        localStorage.setItem('custom_contract_name', newName);
+        toast('Contract mapping updated to: ' + newName, 'success');
+        refreshDashboard();
+      }
+    });
 
     // ===== UI ELEMENTS =====
     const $ = id => document.getElementById(id);
@@ -1166,6 +1196,7 @@
 
     // ===== ACTION HANDLERS =====
     $('btn-checkin').addEventListener('click', () => {
+      const C = getC();
       callContract(C.checkin, 'check-in', [], []);
     });
 
@@ -1247,6 +1278,7 @@
     });
 
     $('btn-transition').addEventListener('click', () => {
+      const C = getC();
       callContract(C.transition, 'signal-transition-v2', [], []);
     });
 
@@ -1256,6 +1288,7 @@
     // ===== READ DATA =====
     async function refreshDashboard() {
       if (!userAddress) return;
+      const C = getC();
       const apiBase = 'https://stacks-node-api.mainnet.stacks.co';
       try {
         const userCVHex = bytesToHex(Cl.serialize(Cl.principal(userAddress)));
