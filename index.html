@@ -795,7 +795,7 @@
           identity, and earn rewards from the protocol treasury.</p>
         <div class="hero-stats">
           <div class="hero-stat">
-            <span class="hero-stat-val">9</span>
+            <span class="hero-stat-val">10</span>
             <span class="hero-stat-lbl">Contracts</span>
           </div>
           <div class="hero-stat">
@@ -847,9 +847,9 @@
           <span class="sub">24h enforced cooldown</span>
         </div>
         <div class="stat-card glass">
-          <span class="label">STX Staked</span>
-          <span class="value" id="ui-staked">0 STX</span>
-          <span class="sub">Commitment signal</span>
+          <span class="label">Transition Signals</span>
+          <span class="value stat-accent" id="ui-signals">0</span>
+          <span class="sub">Total Global readiness</span>
         </div>
       </div>
     </section>
@@ -999,6 +999,20 @@
           </div>
         </div>
 
+        <!-- Nakamoto Transition -->
+        <div class="action-card glass">
+          <div class="action-header">
+            <div class="action-icon">🚀</div>
+            <span class="action-title">Nakamoto Transition</span>
+          </div>
+          <p class="action-desc">Signal your readiness for the Nakamoto era. This is a one-time zero-fee action to record
+            your participation.</p>
+          <div class="action-footer">
+            <span class="action-fee">Free</span>
+            <button id="btn-transition" class="btn btn-glow btn-sm">Signal Readiness</button>
+          </div>
+        </div>
+
       </div>
     </section>
 
@@ -1049,6 +1063,7 @@
       swap: { addr: DEPLOYER, name: 'stx-swap' },
       escrow: { addr: DEPLOYER, name: 'sbtc-escrow' },
       bounties: { addr: DEPLOYER, name: 'builder-bounties' },
+      transition: { addr: DEPLOYER, name: 'signal-transition-v3' },
     };
 
     // ===== STACKS SETUP =====
@@ -1238,6 +1253,11 @@
       );
     });
 
+    // Nakamoto Transition (Free - zero protocol fee)
+    $('btn-transition').addEventListener('click', () => {
+      callContract(C.transition, 'signal-transition-v3', [], []);
+    });
+
     // ===== READ DATA =====
     async function refreshDashboard() {
       if (!userAddress) return;
@@ -1309,6 +1329,20 @@
           const d = await balRes.json();
           const bal = parseInt(d.balance || '0');
           $('ui-treasury').textContent = (bal / 1000000).toFixed(2) + ' STX';
+        }
+
+        // Global Transition Signals
+        const signalsRes = await fetch(`${apiBase}/v2/contracts/call-read/${C.transition.addr}/${C.transition.name}/get-total-signals`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sender: userAddress, arguments: [] })
+        });
+        if (signalsRes.ok) {
+          const d = await signalsRes.json();
+          if (d.okay) {
+            const val = StacksTransactions.cvToValue(StacksTransactions.hexToCV(d.result));
+            $('ui-signals').textContent = val.value.toString();
+          }
         }
 
       } catch (e) {

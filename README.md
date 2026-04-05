@@ -77,6 +77,7 @@ All fees flow into a **consolidated treasury** that tracks spend-per-user, enabl
 | 7 | **STX-USDC Swap** | `stx-swap.clar` | 0.05 | OTC swap desk for builders |
 | 8 | **sBTC Escrow** | `sbtc-escrow.clar` | 0.08 | Trustless BTC ↔ STX bridge |
 | 9 | **Bounties** | `builder-bounties.clar` | 0.06 | Open-source bounty board |
+| 10 | **Nakamoto Transition** | `signal-transition-v3.clar` | **Free** | Zero-fee signaling for Nakamoto upgrade |
 
 ---
 

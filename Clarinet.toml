@@ -75,8 +75,90 @@ epoch = 2.5
 path = "contracts/community-proposal.clar"
 clarity_version = 2
 epoch = 2.5
+[project]
+name = "EarnWithAlee"
+description = "Decentralized On-Chain Reputation Engine for the Stacks Ecosystem"
+authors = []
+telemetry = true
+cache_dir = "./.cache"
+requirements = []
+
+[contracts.event-logger-trait]
+path = "contracts/event-logger-trait.clar"
+clarity_version = 2
+epoch = 2.5
+
+[contracts.event-logger]
+path = "contracts/event-logger.clar"
+clarity_version = 2
+epoch = 2.5
+
+[contracts.SIP-009]
+path = "contracts/nft-trait.clar"
+clarity_version = 2
+epoch = 2.5
+
+[contracts.EarnWithAlee-Treasury]
+path = "contracts/treasury.clar"
+clarity_version = 2
+epoch = 2.5
+
+[contracts.daily-check-in]
+path = "contracts/daily-check-in.clar"
+clarity_version = 2
+epoch = 2.5
+
+[contracts.proof-of-builder]
+path = "contracts/proof-of-builder.clar"
+clarity_version = 2
+epoch = 2.5
+
+[contracts.builder-sbt]
+path = "contracts/builder-sbt.clar"
+clarity_version = 2
+epoch = 2.5
+
+[contracts.builder-staking]
+path = "contracts/builder-staking.clar"
+clarity_version = 2
+epoch = 2.5
+
+[contracts.project-verifier]
+path = "contracts/project-verifier.clar"
+clarity_version = 2
+epoch = 2.5
+
+[contracts.stx-swap]
+path = "contracts/stx-swap.clar"
+clarity_version = 2
+epoch = 2.5
+
+[contracts.sbtc-escrow]
+path = "contracts/sbtc-escrow.clar"
+clarity_version = 2
+epoch = 2.5
+
+[contracts.builder-bounties]
+path = "contracts/builder-bounties.clar"
+clarity_version = 2
+epoch = 2.5
+
+[contracts.profile-badges-v2]
+path = "contracts/profile-badges-v2.clar"
+clarity_version = 2
+epoch = 2.5
+
+[contracts.community-proposal]
+path = "contracts/community-proposal.clar"
+clarity_version = 2
+epoch = 2.5
 
 [contracts.marketplace-v2]
 path = "contracts/marketplace-v2.clar"
+clarity_version = 2
+epoch = 2.5
+
+[contracts.signal-transition-v3]
+path = "contracts/signal-transition-v3.clar"
 clarity_version = 2
 epoch = 2.5

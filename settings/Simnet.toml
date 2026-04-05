@@ -2,9 +2,9 @@
 name = "simnet"
 
 [accounts.deployer]
-mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+mnemonic = "sell invite acquire kitten bamboo drastic jelly vivid peace spawn twice guilt"
 balance = 100000000000000
 
 [accounts.wallet_1]
-mnemonic = "sell invite acquire kitten bamboo drastic jelly vivid peace spawn twice guilt"
+mnemonic = "twice occur unusual ocean depart double aura feel leaf item onion merit"
 balance = 100000000000000
