@@ -1058,11 +1058,7 @@
   <script type="module">
     import { authenticate, UserSession, AppConfig, openContractCall } from '@stacks/connect';
     import { STACKS_MAINNET } from '@stacks/network';
-    import { 
-      stringAsciiCV, uintCV, makeStandardSTXPostCondition, 
-      standardPrincipalCV, cvToHex, cvToValue, hexToCV, 
-      FungibleConditionCode 
-    } from '@stacks/transactions';
+    import { Cl, Pc } from '@stacks/transactions';
 
     console.log("EarnWithAlee: Stacks Modules Loaded (Native ESM)");
 
@@ -1176,7 +1172,7 @@
     $('btn-register').addEventListener('click', () => {
       const github = $('input-github').value.trim();
       if (!github) { toast('Enter your GitHub username', 'error'); return; }
-      callContract(C.registry, 'register-builder', [stringAsciiCV(github)], []);
+      callContract(C.registry, 'register-builder', [Cl.stringAscii(github)], []);
     });
 
     $('btn-sbt').addEventListener('click', () => {
@@ -1189,8 +1185,8 @@
       const stakeAmt = Math.floor(amt * 1000000);
       const fee = 40000;
       callContract(C.staking, 'stake-stx',
-        [uintCV(stakeAmt)],
-        [makeStandardSTXPostCondition(userAddress, FungibleConditionCode.Equal, stakeAmt + fee)]
+        [Cl.uint(stakeAmt)],
+        [Pc.principal(userAddress).willSendEq(stakeAmt + fee).ustx()]
       );
     });
 
@@ -1199,8 +1195,8 @@
       if (!addr) { toast('Enter builder address', 'error'); return; }
       const fee = 100000;
       callContract(C.verifier, 'verify-builder',
-        [standardPrincipalCV(addr)],
-        [makeStandardSTXPostCondition(userAddress, FungibleConditionCode.Equal, fee)]
+        [Cl.principal(addr)],
+        [Pc.principal(userAddress).willSendEq(fee).ustx()]
       );
     });
 
@@ -1208,7 +1204,7 @@
       const recipient = $('input-reward-addr').value.trim();
       const amt = parseInt($('input-reward-amt').value);
       if (!recipient || !amt) { toast('Fill in both fields', 'error'); return; }
-      callContract(C.treasury, 'withdraw-for-rewards', [uintCV(amt), standardPrincipalCV(recipient)], []);
+      callContract(C.treasury, 'withdraw-for-rewards', [Cl.uint(amt), Cl.principal(recipient)], []);
     });
 
     $('btn-swap').addEventListener('click', () => {
@@ -1219,8 +1215,8 @@
       const stxMicro = Math.floor(stxAmt * 1000000);
       const fee = 50000;
       callContract(C.swap, 'create-sell-order',
-        [uintCV(stxMicro), uintCV(price)],
-        [makeStandardSTXPostCondition(userAddress, FungibleConditionCode.Equal, stxMicro + fee)]
+        [Cl.uint(stxMicro), Cl.uint(price)],
+        [Pc.principal(userAddress).willSendEq(stxMicro + fee).ustx()]
       );
     });
 
@@ -1232,8 +1228,8 @@
       const stxMicro = Math.floor(stxAmt * 1000000);
       const fee = 80000;
       callContract(C.escrow, 'create-escrow',
-        [uintCV(stxMicro), uintCV(sbtcAmt)],
-        [makeStandardSTXPostCondition(userAddress, FungibleConditionCode.Equal, stxMicro + fee)]
+        [Cl.uint(stxMicro), Cl.uint(sbtcAmt)],
+        [Pc.principal(userAddress).willSendEq(stxMicro + fee).ustx()]
       );
     });
 
@@ -1245,8 +1241,8 @@
       const rewardMicro = Math.floor(reward * 1000000);
       const fee = 60000;
       callContract(C.bounties, 'post-bounty',
-        [uintCV(rewardMicro), stringAsciiCV(desc)],
-        [makeStandardSTXPostCondition(userAddress, FungibleConditionCode.Equal, rewardMicro + fee)]
+        [Cl.uint(rewardMicro), Cl.stringAscii(desc)],
+        [Pc.principal(userAddress).willSendEq(rewardMicro + fee).ustx()]
       );
     });
 
@@ -1254,22 +1250,27 @@
       callContract(C.transition, 'signal-transition-v3', [], []);
     });
 
+    // ===== UTILS =====
+    const bytesToHex = bytes => bytes.reduce((acc, b) => acc + b.toString(16).padStart(2, '0'), '');
+
     // ===== READ DATA =====
     async function refreshDashboard() {
       if (!userAddress) return;
       const apiBase = 'https://stacks-node-api.mainnet.stacks.co';
       try {
+        const userCVHex = bytesToHex(Cl.serialize(Cl.principal(userAddress)));
+
         // Check-in count
         const checkinRes = await fetch(`${apiBase}/v2/contracts/call-read/${C.checkin.addr}/${C.checkin.name}/get-check-in-count`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sender: userAddress, arguments: [cvToHex(standardPrincipalCV(userAddress))] })
+          body: JSON.stringify({ sender: userAddress, arguments: [userCVHex] })
         });
         if (checkinRes.ok) {
           const d = await checkinRes.json();
           if (d.okay) {
-            const val = cvToValue(hexToCV(d.result));
-            $('ui-checkins').textContent = val.toString();
+            const val = Cl.deserialize(d.result);
+            $('ui-checkins').textContent = val.value.toString();
           }
         }
 
@@ -1277,13 +1278,13 @@
         const spentRes = await fetch(`${apiBase}/v2/contracts/call-read/${C.treasury.addr}/${C.treasury.name}/get-total-spent`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sender: userAddress, arguments: [cvToHex(standardPrincipalCV(userAddress))] })
+          body: JSON.stringify({ sender: userAddress, arguments: [userCVHex] })
         });
         if (spentRes.ok) {
           const d = await spentRes.json();
           if (d.okay) {
-            const val = parseInt(cvToValue(hexToCV(d.result)));
-            $('ui-spent').textContent = (val / 1000000).toFixed(2) + ' STX';
+            const val = Cl.deserialize(d.result);
+            $('ui-spent').textContent = (Number(val.value) / 1000000).toFixed(2) + ' STX';
           }
         }
 
@@ -1291,14 +1292,14 @@
         const profRes = await fetch(`${apiBase}/v2/contracts/call-read/${C.registry.addr}/${C.registry.name}/get-builder`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sender: userAddress, arguments: [cvToHex(standardPrincipalCV(userAddress))] })
+          body: JSON.stringify({ sender: userAddress, arguments: [userCVHex] })
         });
         if (profRes.ok) {
           const d = await profRes.json();
           if (d.okay) {
-            const cv = hexToCV(d.result);
+            const cv = Cl.deserialize(d.result);
             if (cv.type === 10) { 
-              const profile = cvToValue(cv);
+              const profile = cv.value.data;
               $('ui-rep').textContent = profile.reputation?.value?.toString() || '0';
             }
           }
@@ -1308,13 +1309,13 @@
         const stakeRes = await fetch(`${apiBase}/v2/contracts/call-read/${C.staking.addr}/${C.staking.name}/get-stake`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sender: userAddress, arguments: [cvToHex(standardPrincipalCV(userAddress))] })
+          body: JSON.stringify({ sender: userAddress, arguments: [userCVHex] })
         });
         if (stakeRes.ok) {
           const d = await stakeRes.json();
           if (d.okay) {
-            const val = parseInt(cvToValue(hexToCV(d.result)));
-            $('ui-staked').textContent = (val / 1000000).toFixed(2) + ' STX';
+            const val = Cl.deserialize(d.result);
+            $('ui-staked').textContent = (Number(val.value) / 1000000).toFixed(2) + ' STX';
           }
         }
 
@@ -1335,7 +1336,7 @@
         if (signalsRes.ok) {
           const d = await signalsRes.json();
           if (d.okay) {
-            const val = cvToValue(hexToCV(d.result));
+            const val = Cl.deserialize(d.result);
             $('ui-signals').textContent = val.value.toString();
           }
         }
