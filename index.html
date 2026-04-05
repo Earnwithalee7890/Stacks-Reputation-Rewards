@@ -1074,7 +1074,7 @@
       swap: { addr: DEPLOYER, name: 'stx-swap' },
       escrow: { addr: DEPLOYER, name: 'sbtc-escrow' },
       bounties: { addr: DEPLOYER, name: 'builder-bounties' },
-      transition: { addr: DEPLOYER, name: 'signal-transition-v3' },
+      transition: { addr: DEPLOYER, name: 'nakamoto-transition' }, // User's preferred name
     };
 
     // ===== STACKS SETUP =====
@@ -1247,7 +1247,7 @@
     });
 
     $('btn-transition').addEventListener('click', () => {
-      callContract(C.transition, 'signal-transition-v3', [], []);
+      callContract(C.transition, 'signal-transition', [], []);
     });
 
     // ===== UTILS =====

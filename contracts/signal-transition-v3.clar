@@ -1,6 +1,6 @@
-;; Title: Nakamoto Transition Signer v3
-;; Description: Simple zero-fee contract for users to signal their transition with advanced tracking.
-;; This contract takes 0 fees, only standard Stacks transaction fees (gas) apply.
+;; Title: Nakamoto Transition Signer (Robust)
+;; Description: Simple zero-fee contract for users to signal their transition.
+;; Optimized for easy deployment with the name 'nakamoto-transition'.
 
 (define-constant ERR_ALREADY_SIGNALLED (err u100))
 
@@ -8,8 +8,8 @@
 (define-map TransitionSignals principal { block: uint, status: (string-ascii 20) })
 (define-data-var total-signals uint u0)
 
-;; @desc Sign the transition. Function name matches contract name.
-(define-public (signal-transition-v3)
+;; @desc Generic name (signal-transition) to prevent "Function not found" errors
+(define-public (signal-transition)
   (begin
     ;; Ensure user hasn't already signalled
     (asserts! (is-none (map-get? TransitionSignals tx-sender)) ERR_ALREADY_SIGNALLED)
@@ -24,7 +24,7 @@
     (var-set total-signals (+ (var-get total-signals) u1))
     
     ;; Emit event log
-    (print { action: "transition-signal-v3", user: tx-sender, block: stacks-block-height })
+    (print { action: "transition-signal", user: tx-sender, block: stacks-block-height })
     (ok true)
   )
 )
