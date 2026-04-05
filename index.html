@@ -1037,7 +1037,7 @@
         <div class="treasury-inner">
           <div class="treasury-left">
             <h2 style="color: #f97316;">⚙️ Contract Diagnostics</h2>
-            <p style="color: #94a3b8; max-width: 500px;">Current Contract ID: <code>SP...signal-transition-v3</code>. If it fails, update the ID or function:</p>
+            <p style="color: #94a3b8; max-width: 500px;">Current: <code>...v3</code> / <code>signal-transition-v3</code>. If it fails, update below:</p>
             <div style="display: grid; grid-template-columns: 1.5fr 1fr auto; gap: 1rem; margin-top: 1.5rem; width: 100%; max-width: 800px;">
               <input type="text" id="input-custom-id" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem; color: white; outline: none; font-family: monospace;" placeholder="Address.ContractName">
               <input type="text" id="input-custom-func" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem; color: white; outline: none; font-family: monospace;" placeholder="Function (e.g. signal-transition)">
@@ -1086,7 +1086,7 @@
     
     // Dynamic naming support
     let customContractId = localStorage.getItem('custom_contract_id') || `${DEPLOYER}.signal-transition-v3`;
-    let customFunctionName = localStorage.getItem('custom_func_name') || 'signal-transition';
+    let customFunctionName = localStorage.getItem('custom_func_name') || 'signal-transition-v3';
 
     const getC = () => {
       const parts = customContractId.split('.');
