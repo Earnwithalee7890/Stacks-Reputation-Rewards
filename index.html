@@ -1037,10 +1037,10 @@
         <div class="treasury-inner">
           <div class="treasury-left">
             <h2 style="color: #f97316;">⚙️ Contract Diagnostics</h2>
-            <p style="color: #94a3b8; max-width: 500px;">If you see "Not a valid contract" in Leather, enter the <strong>Exact Contract Name</strong> you used in Hiro Explorer (e.g., <code>nakamoto-transition</code> or <code>signal-transition-v2</code>):</p>
-            <div style="display: flex; gap: 1rem; margin-top: 1.5rem; width: 100%; max-width: 500px;">
-              <input type="text" id="input-custom-name" style="flex: 1; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem; color: white; outline: none;" placeholder="Contract ID">
-              <button id="btn-update-name" style="background: #f97316; color: white; border: none; border-radius: 12px; padding: 0 1.5rem; font-weight: bold; cursor: pointer;">Update</button>
+            <p style="color: #94a3b8; max-width: 500px;">If you see "Not a valid contract" in Leather, enter your <strong>Full Contract ID</strong> from the Explorer (e.g. <code>SP...nakamoto-transition</code>):</p>
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem; width: 100%; max-width: 600px;">
+              <input type="text" id="input-custom-id" style="flex: 1; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem; color: white; outline: none; font-family: monospace;" placeholder="Address.ContractName">
+              <button id="btn-update-id" style="background: #f97316; color: white; border: none; border-radius: 12px; padding: 0 1.5rem; font-weight: bold; cursor: pointer;">Update ID</button>
             </div>
           </div>
         </div>
@@ -1084,20 +1084,26 @@
     const DEPLOYER = 'SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT';
     
     // Dynamic naming support
-    let customContractName = localStorage.getItem('custom_contract_name') || 'nakamoto-transition';
+    let customContractId = localStorage.getItem('custom_contract_id') || `${DEPLOYER}.nakamoto-transition`;
 
-    const getC = () => ({
-      treasury: { addr: DEPLOYER, name: 'treasury' },
-      checkin: { addr: DEPLOYER, name: 'daily-check-in' },
-      registry: { addr: DEPLOYER, name: 'proof-of-builder' },
-      sbt: { addr: DEPLOYER, name: 'builder-sbt' },
-      staking: { addr: DEPLOYER, name: 'builder-staking' },
-      verifier: { addr: DEPLOYER, name: 'project-verifier' },
-      swap: { addr: DEPLOYER, name: 'stx-swap' },
-      escrow: { addr: DEPLOYER, name: 'sbtc-escrow' },
-      bounties: { addr: DEPLOYER, name: 'builder-bounties' },
-      transition: { addr: DEPLOYER, name: customContractName },
-    });
+    const getC = () => {
+      const parts = customContractId.split('.');
+      const addr = parts[0] || DEPLOYER;
+      const name = parts[1] || 'nakamoto-transition';
+      
+      return {
+        treasury: { addr: DEPLOYER, name: 'treasury' },
+        checkin: { addr: DEPLOYER, name: 'daily-check-in' },
+        registry: { addr: DEPLOYER, name: 'proof-of-builder' },
+        sbt: { addr: DEPLOYER, name: 'builder-sbt' },
+        staking: { addr: DEPLOYER, name: 'builder-staking' },
+        verifier: { addr: DEPLOYER, name: 'project-verifier' },
+        swap: { addr: DEPLOYER, name: 'stx-swap' },
+        escrow: { addr: DEPLOYER, name: 'sbtc-escrow' },
+        bounties: { addr: DEPLOYER, name: 'builder-bounties' },
+        transition: { addr: addr, name: name },
+      };
+    };
 
     // ===== STACKS SETUP =====
     const appConfig = new AppConfig(['store_write', 'publish_data']);
@@ -1105,15 +1111,17 @@
     let userAddress = null;
 
     // ===== DYNAMIC CONFIG =====
-    if ($('input-custom-name')) {
-      $('input-custom-name').value = customContractName;
-      $('btn-update-name').addEventListener('click', () => {
-        const newName = $('input-custom-name').value.trim();
-        if (newName) {
-          customContractName = newName;
-          localStorage.setItem('custom_contract_name', newName);
-          toast('Contract mapping updated to: ' + newName, 'success');
+    if ($('input-custom-id')) {
+      $('input-custom-id').value = customContractId;
+      $('btn-update-id').addEventListener('click', () => {
+        const newId = $('input-custom-id').value.trim();
+        if (newId && newId.includes('.')) {
+          customContractId = newId;
+          localStorage.setItem('custom_contract_id', newId);
+          toast('Contract ID updated to: ' + newId, 'success');
           refreshDashboard();
+        } else {
+          toast('Enter a valid ID (Address.ContractName)', 'error');
         }
       });
     }
