@@ -1084,7 +1084,13 @@
     // CONFIG - CORRECTED TO USER'S ACTUAL MAINNET ADDRESS
     const DEPLOYER = 'SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT';
     
-    // Dynamic naming support
+    // Dynamic naming support - FORCING RESET TO FIX CACHING
+    if (!localStorage.getItem('config_v3_ready')) {
+      localStorage.removeItem('custom_contract_id');
+      localStorage.removeItem('custom_func_name');
+      localStorage.setItem('config_v3_ready', 'true');
+    }
+
     let customContractId = localStorage.getItem('custom_contract_id') || `${DEPLOYER}.signal-transition-v3`;
     let customFunctionName = localStorage.getItem('custom_func_name') || 'signal-transition-v3';
 
