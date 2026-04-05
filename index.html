@@ -1044,360 +1044,361 @@
   <!-- Toast Container -->
   <div id="toasts" class="toast-container"></div>
 
-  <!-- Stacks Connect via CDN - Using JSdelivr for improved reliability and better UMD support -->
-  <script src="https://cdn.jsdelivr.net/npm/@stacks/connect@8.2.4/dist/umd/index.umd.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@stacks/network@7.3.1/dist/umd/index.umd.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@stacks/transactions@7.3.1/dist/umd/index.umd.js"></script>
+  <!-- Stacks Connect via Multiple CDNs for Redundancy -->
+  <script src="https://unpkg.com/@stacks/connect@8.2.4/dist/umd/index.umd.js"></script>
+  <script src="https://unpkg.com/@stacks/network@7.3.1/dist/umd/index.umd.js"></script>
+  <script src="https://unpkg.com/@stacks/transactions@7.3.1/dist/umd/index.umd.js"></script>
 
   <script>
-    console.log("Stacks libraries initialization...");
-    
-    // Defensive global resolver to prevent ReferenceErrors
-    const getStacksLib = (name) => {
-      try {
-        return window[name] || (typeof globalThis !== 'undefined' ? globalThis[name] : null);
-      } catch (e) {
-        console.warn(`Error accessing Stacks library ${name}:`, e);
-        return null;
-      }
-    };
-
-    // Initialize library references
-    const SC = getStacksLib('StacksConnect');
-    const SN = getStacksLib('StacksNetwork');
-    const ST = getStacksLib('StacksTransactions');
-
-    // CONFIG
-    const DEPLOYER = 'SP2F50MRY60R8DPW8T613YYAX04YV8CP06Y77J3BT';
-    const C = {
-      treasury: { addr: DEPLOYER, name: 'treasury' },
-      checkin: { addr: DEPLOYER, name: 'daily-check-in' },
-      registry: { addr: DEPLOYER, name: 'proof-of-builder' },
-      sbt: { addr: DEPLOYER, name: 'builder-sbt' },
-      staking: { addr: DEPLOYER, name: 'builder-staking' },
-      verifier: { addr: DEPLOYER, name: 'project-verifier' },
-      swap: { addr: DEPLOYER, name: 'stx-swap' },
-      escrow: { addr: DEPLOYER, name: 'sbtc-escrow' },
-      bounties: { addr: DEPLOYER, name: 'builder-bounties' },
-      transition: { addr: DEPLOYER, name: 'signal-transition-v3' },
-    };
-
-    // ===== STACKS SETUP =====
-    let userSession = null;
-    let userAddress = null;
-
-    if (SC) {
-      const appConfig = new SC.AppConfig(['store_write', 'publish_data']);
-      userSession = new SC.UserSession({ appConfig });
-      console.log("UserSession initialized");
-    } else {
-      console.error("CRITICAL: StacksConnect library failed to load globally.");
-    }
-
-    // ===== UI ELEMENTS =====
-    const $ = id => document.getElementById(id);
-
-    // ===== TOAST =====
-    function toast(msg, type = 'info') {
-      const el = document.createElement('div');
-      el.className = 'toast ' + type;
-      el.textContent = (type === 'success' ? '✅ ' : type === 'error' ? '❌ ' : 'ℹ️ ') + msg;
-      $('toasts').appendChild(el);
-      setTimeout(() => el.remove(), 5000);
-    }
-
-    // ===== WALLET =====
-    $('btn-connect').addEventListener('click', () => {
-      if (!SC) {
-        toast("Library error: Please refresh the page", "error");
-        return;
-      }
+    // ===== INITIALIZATION WRAPPER =====
+    window.onload = () => {
+      console.log("Stacks libraries initialization...");
       
-      console.log("Connect attempt starting...");
-      SC.authenticate({
-        userSession,
-        appDetails: { 
-          name: 'EarnWithAlee', 
-          icon: window.location.origin + '/favicon.ico' 
-        },
-        onFinish: () => {
-          const data = userSession.loadUserData();
-          console.log("Auth successful", data);
-          userAddress = data.profile.stxAddress.mainnet || data.profile.stxAddress.testnet;
-          
-          if (!userAddress) {
-            toast("Wallet error: No address found", "error");
-            return;
+      // Aggressive global resolver for 2026 Stacks UMD environments
+      const resolveStacksLib = (hint) => {
+        // 1. Check standard names
+        const standardNames = [
+          'StacksConnect', 'StacksNetwork', 'StacksTransactions',
+          'Stacks', 'StacksJS', 'stacksConnect', 'stacksTransactions'
+        ];
+        
+        const match = standardNames.find(n => n.toLowerCase() === hint.toLowerCase() && window[n]);
+        if (match) return window[match];
+
+        // 2. Deep search for anything related to the hint
+        try {
+          for (const key in window) {
+            if (key.toLowerCase().includes('stacks') && key.toLowerCase().includes(hint.substring(6).toLowerCase())) {
+              console.log(`Discovered ${hint} fallback as window.${key}`);
+              return window[key];
+            }
           }
-          
+        } catch (e) {}
+
+        // 3. Version specific names
+        if (hint === 'StacksConnect' && window.Stacks && window.Stacks.connect) return window.Stacks.connect;
+        if (hint === 'StacksTransactions' && window.Stacks && window.Stacks.transactions) return window.Stacks.transactions;
+        
+        return null;
+      };
+
+      // Initialize with fallback discovery
+      const SC = resolveStacksLib('StacksConnect');
+      const SN = resolveStacksLib('StacksNetwork');
+      const ST = resolveStacksLib('StacksTransactions');
+
+      console.log("Library Status:", { SC: !!SC, SN: !!SN, ST: !!ST });
+
+      // CONFIG
+      const DEPLOYER = 'SP2F50MRY60R8DPW8T613YYAX04YV8CP06Y77J3BT';
+      const C = {
+        treasury: { addr: DEPLOYER, name: 'treasury' },
+        checkin: { addr: DEPLOYER, name: 'daily-check-in' },
+        registry: { addr: DEPLOYER, name: 'proof-of-builder' },
+        sbt: { addr: DEPLOYER, name: 'builder-sbt' },
+        staking: { addr: DEPLOYER, name: 'builder-staking' },
+        verifier: { addr: DEPLOYER, name: 'project-verifier' },
+        swap: { addr: DEPLOYER, name: 'stx-swap' },
+        escrow: { addr: DEPLOYER, name: 'sbtc-escrow' },
+        bounties: { addr: DEPLOYER, name: 'builder-bounties' },
+        transition: { addr: DEPLOYER, name: 'signal-transition-v3' },
+      };
+
+      // ===== STACKS SETUP =====
+      let userSession = null;
+      let userAddress = null;
+
+      if (SC) {
+        try {
+          const appConfig = new SC.AppConfig(['store_write', 'publish_data']);
+          userSession = new SC.UserSession({ appConfig });
+          console.log("UserSession established");
+        } catch (e) {
+          console.error("Initialization Error:", e);
+        }
+      } else {
+        console.error("CRITICAL: StacksConnect not discovered. Ensure scripts load correctly.");
+      }
+
+      // ===== UI ELEMENTS =====
+      const $ = id => document.getElementById(id);
+
+      // ===== TOAST =====
+      function toast(msg, type = 'info') {
+        const el = document.createElement('div');
+        el.className = 'toast ' + type;
+        el.textContent = (type === 'success' ? '✅ ' : type === 'error' ? '❌ ' : 'ℹ️ ') + msg;
+        $('toasts').appendChild(el);
+        setTimeout(() => el.remove(), 5000);
+      }
+
+      // ===== WALLET =====
+      $('btn-connect').addEventListener('click', () => {
+        if (!SC) {
+          toast("Library error: Please refresh the page", "error");
+          return;
+        }
+        
+        console.log("Connect attempt starting...");
+        SC.authenticate({
+          userSession,
+          appDetails: { 
+            name: 'EarnWithAlee', 
+            icon: window.location.origin + '/favicon.ico' 
+          },
+          onFinish: () => {
+            const data = userSession.loadUserData();
+            console.log("Auth successful", data);
+            userAddress = data.profile.stxAddress.mainnet || data.profile.stxAddress.testnet;
+            
+            if (!userAddress) {
+              toast("Wallet error: No address found", "error");
+              return;
+            }
+            
+            $('btn-connect').classList.add('hidden');
+            $('wallet-info').classList.remove('hidden');
+            $('wallet-addr').textContent = userAddress.substring(0, 5) + '...' + userAddress.slice(-4);
+            $('sbt-status').textContent = 'Wallet connected';
+            toast('Wallet connected!', 'success');
+            refreshDashboard();
+          },
+          onCancel: () => {
+            toast("Connection cancelled", "info");
+          }
+        });
+      });
+
+      // Auto-connect
+      if (userSession && userSession.isUserSignedIn()) {
+        const data = userSession.loadUserData();
+        userAddress = data.profile.stxAddress.mainnet || data.profile.stxAddress.testnet;
+        if (userAddress) {
           $('btn-connect').classList.add('hidden');
           $('wallet-info').classList.remove('hidden');
           $('wallet-addr').textContent = userAddress.substring(0, 5) + '...' + userAddress.slice(-4);
-          $('sbt-status').textContent = 'Wallet connected';
-          toast('Wallet connected!', 'success');
           refreshDashboard();
-        },
-        onCancel: () => {
-          toast("Connection cancelled", "info");
         }
-      });
-    });
-
-    // Auto-connect
-    if (userSession && userSession.isUserSignedIn()) {
-      const data = userSession.loadUserData();
-      userAddress = data.profile.stxAddress.mainnet || data.profile.stxAddress.testnet;
-      if (userAddress) {
-        $('btn-connect').classList.add('hidden');
-        $('wallet-info').classList.remove('hidden');
-        $('wallet-addr').textContent = userAddress.substring(0, 5) + '...' + userAddress.slice(-4);
-        refreshDashboard();
       }
-    }
 
-    // ===== HELPERS =====
-    function getOpenContractCall() {
-      if (SC && SC.openContractCall) return SC.openContractCall;
-      if (window.openContractCall) return window.openContractCall;
-      return null;
-    }
+      // ===== HELPERS =====
+      function getOpenContractCall() {
+        if (SC && SC.openContractCall) return SC.openContractCall;
+        if (window.openContractCall) return window.openContractCall;
+        return null;
+      }
 
-    function requireWallet() {
-      if (!userAddress) { toast('Connect your wallet first', 'error'); return false; }
-      return true;
-    }
+      function requireWallet() {
+        if (!userAddress) { toast('Connect your wallet first', 'error'); return false; }
+        return true;
+      }
 
-    function callContract(contract, fn, args, postConditions, onDone) {
-      if (!requireWallet()) return;
-      const call = getOpenContractCall();
-      if (!call) { toast('Stacks Connect library not loaded', 'error'); return; }
+      function callContract(contract, fn, args, postConditions, onDone) {
+        if (!requireWallet()) return;
+        const call = getOpenContractCall();
+        if (!call) { toast('Stacks Connect library not loaded', 'error'); return; }
 
-      const opts = {
-        contractAddress: contract.addr,
-        contractName: contract.name,
-        functionName: fn,
-        functionArgs: args,
-        postConditionMode: 0x02, // Deny
-        postConditions: postConditions || [],
-        network: SN.STACKS_MAINNET,
-        appDetails: { 
-          name: 'EarnWithAlee', 
-          icon: window.location.origin + '/favicon.ico' 
-        },
-        onFinish: (data) => {
-          toast('Transaction broadcasted! TX: ' + data.txId.substring(0, 12) + '...', 'success');
-          if (onDone) onDone(data);
-        },
-        onCancel: () => toast('Transaction cancelled', 'error'),
-      };
+        const opts = {
+          contractAddress: contract.addr,
+          contractName: contract.name,
+          functionName: fn,
+          functionArgs: args,
+          postConditionMode: 0x02, // Deny
+          postConditions: postConditions || [],
+          network: SN.STACKS_MAINNET,
+          appDetails: { 
+            name: 'EarnWithAlee', 
+            icon: window.location.origin + '/favicon.ico' 
+          },
+          onFinish: (data) => {
+            toast('Transaction broadcasted! TX: ' + data.txId.substring(0, 12) + '...', 'success');
+            if (onDone) onDone(data);
+          },
+          onCancel: () => toast('Transaction cancelled', 'error'),
+        };
 
-      call(opts);
-    }
+        call(opts);
+      }
 
-    // ===== ACTION HANDLERS =====
+      // ===== ACTION HANDLERS =====
+      $('btn-checkin').addEventListener('click', () => {
+        callContract(C.checkin, 'check-in', [], []);
+      });
 
-    $('btn-checkin').addEventListener('click', () => {
-      callContract(C.checkin, 'check-in', [], []);
-    });
+      $('btn-register').addEventListener('click', () => {
+        const github = $('input-github').value.trim();
+        if (!github) { toast('Enter your GitHub username', 'error'); return; }
+        callContract(C.registry, 'register-builder', [ST.stringAsciiCV(github)], []);
+      });
 
-    $('btn-register').addEventListener('click', () => {
-      const github = $('input-github').value.trim();
-      if (!github) { toast('Enter your GitHub username', 'error'); return; }
-      callContract(C.registry, 'register-builder',
-        [ST.stringAsciiCV(github)],
-        []
-      );
-    });
+      $('btn-sbt').addEventListener('click', () => {
+        callContract(C.sbt, 'mint-sbt', [], []);
+      });
 
-    $('btn-sbt').addEventListener('click', () => {
-      callContract(C.sbt, 'mint-sbt', [], []);
-    });
+      $('btn-stake').addEventListener('click', () => {
+        const amt = parseFloat($('input-stake').value);
+        if (!amt || amt < 1) { toast('Minimum stake is 1 STX', 'error'); return; }
+        const stakeAmt = Math.floor(amt * 1000000);
+        const fee = 40000;
+        callContract(C.staking, 'stake-stx',
+          [ST.uintCV(stakeAmt)],
+          [ST.makeStandardSTXPostCondition(userAddress, ST.FungibleConditionCode.Equal, stakeAmt + fee)]
+        );
+      });
 
-    // Stake STX (min 1 STX + 0.04 STX fee)
-    $('btn-stake').addEventListener('click', () => {
-      const amt = parseFloat($('input-stake').value);
-      if (!amt || amt < 1) { toast('Minimum stake is 1 STX', 'error'); return; }
-      const stakeAmt = Math.floor(amt * 1000000);
-      const fee = 40000;
-      callContract(C.staking, 'stake-stx',
-        [ST.uintCV(stakeAmt)],
-        [ST.makeStandardSTXPostCondition(
-          userAddress, ST.FungibleConditionCode.Equal, stakeAmt + fee
-        )]
-      );
-    });
+      $('btn-verify').addEventListener('click', () => {
+        const addr = $('input-verify').value.trim();
+        if (!addr) { toast('Enter builder address', 'error'); return; }
+        const fee = 100000;
+        callContract(C.verifier, 'verify-builder',
+          [ST.standardPrincipalCV(addr)],
+          [ST.makeStandardSTXPostCondition(userAddress, ST.FungibleConditionCode.Equal, fee)]
+        );
+      });
 
-    // Verify Builder (0.10 STX)
-    $('btn-verify').addEventListener('click', () => {
-      const addr = $('input-verify').value.trim();
-      if (!addr) { toast('Enter builder address', 'error'); return; }
-      const fee = 100000;
-      callContract(C.verifier, 'verify-builder',
-        [ST.standardPrincipalCV(addr)],
-        [ST.makeStandardSTXPostCondition(
-          userAddress, ST.FungibleConditionCode.Equal, fee
-        )]
-      );
-    });
+      $('btn-reward').addEventListener('click', () => {
+        const recipient = $('input-reward-addr').value.trim();
+        const amt = parseInt($('input-reward-amt').value);
+        if (!recipient || !amt) { toast('Fill in both fields', 'error'); return; }
+        callContract(C.treasury, 'withdraw-for-rewards', [ST.uintCV(amt), ST.standardPrincipalCV(recipient)], []);
+      });
 
-    // Send Reward (Owner Only)
-    $('btn-reward').addEventListener('click', () => {
-      const recipient = $('input-reward-addr').value.trim();
-      const amt = parseInt($('input-reward-amt').value);
-      if (!recipient || !amt) { toast('Fill in both fields', 'error'); return; }
-      callContract(C.treasury, 'withdraw-for-rewards',
-        [ST.uintCV(amt), ST.standardPrincipalCV(recipient)],
-        []
-      );
-    });
+      $('btn-swap').addEventListener('click', () => {
+        const stxAmt = parseFloat($('input-swap-stx').value);
+        const price = parseInt($('input-swap-price').value);
+        if (!stxAmt || stxAmt <= 0) { toast('Enter STX amount to sell', 'error'); return; }
+        if (!price || price <= 0) { toast('Enter price per STX', 'error'); return; }
+        const stxMicro = Math.floor(stxAmt * 1000000);
+        const fee = 50000;
+        callContract(C.swap, 'create-sell-order',
+          [ST.uintCV(stxMicro), ST.uintCV(price)],
+          [ST.makeStandardSTXPostCondition(userAddress, ST.FungibleConditionCode.Equal, stxMicro + fee)]
+        );
+      });
 
-    // STX-USDC Swap (0.05 STX fee + STX being sold)
-    $('btn-swap').addEventListener('click', () => {
-      const stxAmt = parseFloat($('input-swap-stx').value);
-      const price = parseInt($('input-swap-price').value);
-      if (!stxAmt || stxAmt <= 0) { toast('Enter STX amount to sell', 'error'); return; }
-      if (!price || price <= 0) { toast('Enter price per STX', 'error'); return; }
-      const stxMicro = Math.floor(stxAmt * 1000000);
-      const fee = 50000;
-      callContract(C.swap, 'create-sell-order',
-        [ST.uintCV(stxMicro), ST.uintCV(price)],
-        [ST.makeStandardSTXPostCondition(
-          userAddress, ST.FungibleConditionCode.Equal, stxMicro + fee
-        )]
-      );
-    });
+      $('btn-escrow').addEventListener('click', () => {
+        const stxAmt = parseFloat($('input-escrow-stx').value);
+        const sbtcAmt = parseInt($('input-escrow-sbtc').value);
+        if (!stxAmt || stxAmt < 1) { toast('Minimum 1 STX to lock', 'error'); return; }
+        if (!sbtcAmt || sbtcAmt <= 0) { toast('Enter sBTC amount requested', 'error'); return; }
+        const stxMicro = Math.floor(stxAmt * 1000000);
+        const fee = 80000;
+        callContract(C.escrow, 'create-escrow',
+          [ST.uintCV(stxMicro), ST.uintCV(sbtcAmt)],
+          [ST.makeStandardSTXPostCondition(userAddress, ST.FungibleConditionCode.Equal, stxMicro + fee)]
+        );
+      });
 
-    // sBTC Bridge Escrow (0.08 STX fee + STX locked)
-    $('btn-escrow').addEventListener('click', () => {
-      const stxAmt = parseFloat($('input-escrow-stx').value);
-      const sbtcAmt = parseInt($('input-escrow-sbtc').value);
-      if (!stxAmt || stxAmt < 1) { toast('Minimum 1 STX to lock', 'error'); return; }
-      if (!sbtcAmt || sbtcAmt <= 0) { toast('Enter sBTC amount requested', 'error'); return; }
-      const stxMicro = Math.floor(stxAmt * 1000000);
-      const fee = 80000;
-      callContract(C.escrow, 'create-escrow',
-        [ST.uintCV(stxMicro), ST.uintCV(sbtcAmt)],
-        [ST.makeStandardSTXPostCondition(
-          userAddress, ST.FungibleConditionCode.Equal, stxMicro + fee
-        )]
-      );
-    });
+      $('btn-bounty').addEventListener('click', () => {
+        const reward = parseFloat($('input-bounty-reward').value);
+        const desc = $('input-bounty-desc').value.trim();
+        if (!reward || reward <= 0) { toast('Enter bounty reward', 'error'); return; }
+        if (!desc) { toast('Enter bounty description', 'error'); return; }
+        const rewardMicro = Math.floor(reward * 1000000);
+        const fee = 60000;
+        callContract(C.bounties, 'post-bounty',
+          [ST.uintCV(rewardMicro), ST.stringAsciiCV(desc)],
+          [ST.makeStandardSTXPostCondition(userAddress, ST.FungibleConditionCode.Equal, rewardMicro + fee)]
+        );
+      });
 
-    // Builder Bounties (0.06 STX fee + reward)
-    $('btn-bounty').addEventListener('click', () => {
-      const reward = parseFloat($('input-bounty-reward').value);
-      const desc = $('input-bounty-desc').value.trim();
-      if (!reward || reward <= 0) { toast('Enter bounty reward', 'error'); return; }
-      if (!desc) { toast('Enter bounty description', 'error'); return; }
-      const rewardMicro = Math.floor(reward * 1000000);
-      const fee = 60000;
-      callContract(C.bounties, 'post-bounty',
-        [ST.uintCV(rewardMicro), ST.stringAsciiCV(desc)],
-        [ST.makeStandardSTXPostCondition(
-          userAddress, ST.FungibleConditionCode.Equal, rewardMicro + fee
-        )]
-      );
-    });
+      $('btn-transition').addEventListener('click', () => {
+        callContract(C.transition, 'signal-transition-v3', [], []);
+      });
 
-    // Nakamoto Transition (Free - zero protocol fee)
-    $('btn-transition').addEventListener('click', () => {
-      callContract(C.transition, 'signal-transition-v3', [], []);
-    });
-
-    // ===== READ DATA =====
-    async function refreshDashboard() {
-      if (!userAddress) return;
-      const apiBase = 'https://stacks-node-api.mainnet.stacks.co';
-
-      try {
-        // Check-in count
-        const checkinRes = await fetch(`${apiBase}/v2/contracts/call-read/${C.checkin.addr}/${C.checkin.name}/get-check-in-count`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sender: userAddress, arguments: [ST.cvToHex(ST.standardPrincipalCV(userAddress))] })
-        });
-        if (checkinRes.ok) {
-          const d = await checkinRes.json();
-          if (d.okay) {
-            const val = ST.cvToValue(ST.hexToCV(d.result));
-            $('ui-checkins').textContent = val.toString();
-          }
-        }
-
-        // Total spent in Treasury
-        const spentRes = await fetch(`${apiBase}/v2/contracts/call-read/${C.treasury.addr}/${C.treasury.name}/get-total-spent`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sender: userAddress, arguments: [ST.cvToHex(ST.standardPrincipalCV(userAddress))] })
-        });
-        if (spentRes.ok) {
-          const d = await spentRes.json();
-          if (d.okay) {
-            const val = parseInt(ST.cvToValue(ST.hexToCV(d.result)));
-            $('ui-spent').textContent = (val / 1000000).toFixed(2) + ' STX';
-          }
-        }
-
-        // Builder profile (reputation)
-        const profRes = await fetch(`${apiBase}/v2/contracts/call-read/${C.registry.addr}/${C.registry.name}/get-builder`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sender: userAddress, arguments: [ST.cvToHex(ST.standardPrincipalCV(userAddress))] })
-        });
-        if (profRes.ok) {
-          const d = await profRes.json();
-          if (d.okay) {
-            const cv = ST.hexToCV(d.result);
-            if (cv.type === 10) { // some
-              const profile = ST.cvToValue(cv);
-              $('ui-rep').textContent = profile.reputation?.value?.toString() || '0';
+      // ===== READ DATA =====
+      async function refreshDashboard() {
+        if (!userAddress) return;
+        const apiBase = 'https://stacks-node-api.mainnet.stacks.co';
+        try {
+          // Check-in count
+          const checkinRes = await fetch(`${apiBase}/v2/contracts/call-read/${C.checkin.addr}/${C.checkin.name}/get-check-in-count`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sender: userAddress, arguments: [ST.cvToHex(ST.standardPrincipalCV(userAddress))] })
+          });
+          if (checkinRes.ok) {
+            const d = await checkinRes.json();
+            if (d.okay) {
+              const val = ST.cvToValue(ST.hexToCV(d.result));
+              $('ui-checkins').textContent = val.toString();
             }
           }
-        }
 
-        // Staked amount
-        const stakeRes = await fetch(`${apiBase}/v2/contracts/call-read/${C.staking.addr}/${C.staking.name}/get-stake`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sender: userAddress, arguments: [ST.cvToHex(ST.standardPrincipalCV(userAddress))] })
-        });
-        if (stakeRes.ok) {
-          const d = await stakeRes.json();
-          if (d.okay) {
-            const val = parseInt(ST.cvToValue(ST.hexToCV(d.result)));
-            $('ui-staked').textContent = (val / 1000000).toFixed(2) + ' STX';
+          // Total spent in Treasury
+          const spentRes = await fetch(`${apiBase}/v2/contracts/call-read/${C.treasury.addr}/${C.treasury.name}/get-total-spent`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sender: userAddress, arguments: [ST.cvToHex(ST.standardPrincipalCV(userAddress))] })
+          });
+          if (spentRes.ok) {
+            const d = await spentRes.json();
+            if (d.okay) {
+              const val = parseInt(ST.cvToValue(ST.hexToCV(d.result)));
+              $('ui-spent').textContent = (val / 1000000).toFixed(2) + ' STX';
+            }
           }
-        }
 
-        // Treasury balance
-        const balRes = await fetch(`${apiBase}/extended/v1/address/${C.treasury.addr}.${C.treasury.name}/stx`);
-        if (balRes.ok) {
-          const d = await balRes.json();
-          const bal = parseInt(d.balance || '0');
-          $('ui-treasury').textContent = (bal / 1000000).toFixed(2) + ' STX';
-        }
-
-        // Global Transition Signals
-        const signalsRes = await fetch(`${apiBase}/v2/contracts/call-read/${C.transition.addr}/${C.transition.name}/get-total-signals`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sender: userAddress, arguments: [] })
-        });
-        if (signalsRes.ok) {
-          const d = await signalsRes.json();
-          if (d.okay) {
-            const val = ST.cvToValue(ST.hexToCV(d.result));
-            $('ui-signals').textContent = val.value.toString();
+          // Builder profile
+          const profRes = await fetch(`${apiBase}/v2/contracts/call-read/${C.registry.addr}/${C.registry.name}/get-builder`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sender: userAddress, arguments: [ST.cvToHex(ST.standardPrincipalCV(userAddress))] })
+          });
+          if (profRes.ok) {
+            const d = await profRes.json();
+            if (d.okay) {
+              const cv = ST.hexToCV(d.result);
+              if (cv.type === 10) { 
+                const profile = ST.cvToValue(cv);
+                $('ui-rep').textContent = profile.reputation?.value?.toString() || '0';
+              }
+            }
           }
-        }
 
-      } catch (e) {
-        console.log('Dashboard refresh error (contracts may not be deployed yet):', e);
+          // Staked amount
+          const stakeRes = await fetch(`${apiBase}/v2/contracts/call-read/${C.staking.addr}/${C.staking.name}/get-stake`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sender: userAddress, arguments: [ST.cvToHex(ST.standardPrincipalCV(userAddress))] })
+          });
+          if (stakeRes.ok) {
+            const d = await stakeRes.json();
+            if (d.okay) {
+              const val = parseInt(ST.cvToValue(ST.hexToCV(d.result)));
+              $('ui-staked').textContent = (val / 1000000).toFixed(2) + ' STX';
+            }
+          }
+
+          // Treasury balance
+          const balRes = await fetch(`${apiBase}/extended/v1/address/${C.treasury.addr}.${C.treasury.name}/stx`);
+          if (balRes.ok) {
+            const d = await balRes.json();
+            const bal = parseInt(d.balance || '0');
+            $('ui-treasury').textContent = (bal / 1000000).toFixed(2) + ' STX';
+          }
+
+          // Global Transition Signals
+          const signalsRes = await fetch(`${apiBase}/v2/contracts/call-read/${C.transition.addr}/${C.transition.name}/get-total-signals`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sender: userAddress, arguments: [] })
+          });
+          if (signalsRes.ok) {
+            const d = await signalsRes.json();
+            if (d.okay) {
+              const val = ST.cvToValue(ST.hexToCV(d.result));
+              $('ui-signals').textContent = val.value.toString();
+            }
+          }
+        } catch (e) {
+          console.log('Dashboard refresh error:', e);
+        }
       }
-    }
 
-    // Refresh every 30s
-    setInterval(() => { if (userAddress) refreshDashboard(); }, 30000);
+      // Refresh every 30s
+      setInterval(() => { if (userAddress) refreshDashboard(); }, 30000);
+    };
   </script>
 </body>
 
