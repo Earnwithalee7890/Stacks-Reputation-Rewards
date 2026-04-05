@@ -1037,10 +1037,11 @@
         <div class="treasury-inner">
           <div class="treasury-left">
             <h2 style="color: #f97316;">⚙️ Contract Diagnostics</h2>
-            <p style="color: #94a3b8; max-width: 500px;">If you see "Not a valid contract" in Leather, enter your <strong>Full Contract ID</strong> from the Explorer (e.g. <code>SP...nakamoto-transition</code>):</p>
-            <div style="display: flex; gap: 1rem; margin-top: 1.5rem; width: 100%; max-width: 600px;">
-              <input type="text" id="input-custom-id" style="flex: 1; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem; color: white; outline: none; font-family: monospace;" placeholder="Address.ContractName">
-              <button id="btn-update-id" style="background: #f97316; color: white; border: none; border-radius: 12px; padding: 0 1.5rem; font-weight: bold; cursor: pointer;">Update ID</button>
+            <p style="color: #94a3b8; max-width: 500px;">Current Contract ID: <code>SP...signal-transition-v3</code>. If it fails, update the ID or function:</p>
+            <div style="display: grid; grid-template-columns: 1.5fr 1fr auto; gap: 1rem; margin-top: 1.5rem; width: 100%; max-width: 800px;">
+              <input type="text" id="input-custom-id" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem; color: white; outline: none; font-family: monospace;" placeholder="Address.ContractName">
+              <input type="text" id="input-custom-func" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem; color: white; outline: none; font-family: monospace;" placeholder="Function (e.g. signal-transition)">
+              <button id="btn-update-id" style="background: #f97316; color: white; border: none; border-radius: 12px; padding: 0 1.5rem; font-weight: bold; cursor: pointer;">Save Settings</button>
             </div>
           </div>
         </div>
@@ -1084,12 +1085,13 @@
     const DEPLOYER = 'SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT';
     
     // Dynamic naming support
-    let customContractId = localStorage.getItem('custom_contract_id') || `${DEPLOYER}.nakamoto-transition`;
+    let customContractId = localStorage.getItem('custom_contract_id') || `${DEPLOYER}.signal-transition-v3`;
+    let customFunctionName = localStorage.getItem('custom_func_name') || 'signal-transition';
 
     const getC = () => {
       const parts = customContractId.split('.');
       const addr = parts[0] || DEPLOYER;
-      const name = parts[1] || 'nakamoto-transition';
+      const name = parts[1] || 'signal-transition-v3';
       
       return {
         treasury: { addr: DEPLOYER, name: 'treasury' },
@@ -1102,6 +1104,7 @@
         escrow: { addr: DEPLOYER, name: 'sbtc-escrow' },
         bounties: { addr: DEPLOYER, name: 'builder-bounties' },
         transition: { addr: addr, name: name },
+        transitionFunc: customFunctionName,
       };
     };
 
@@ -1113,15 +1116,19 @@
     // ===== DYNAMIC CONFIG =====
     if ($('input-custom-id')) {
       $('input-custom-id').value = customContractId;
+      $('input-custom-func').value = customFunctionName;
       $('btn-update-id').addEventListener('click', () => {
         const newId = $('input-custom-id').value.trim();
-        if (newId && newId.includes('.')) {
+        const newFunc = $('input-custom-func').value.trim();
+        if (newId && newId.includes('.') && newFunc) {
           customContractId = newId;
+          customFunctionName = newFunc;
           localStorage.setItem('custom_contract_id', newId);
-          toast('Contract ID updated to: ' + newId, 'success');
+          localStorage.setItem('custom_func_name', newFunc);
+          toast('Contract connection updated!', 'success');
           refreshDashboard();
         } else {
-          toast('Enter a valid ID (Address.ContractName)', 'error');
+          toast('All fields are required!', 'error');
         }
       });
     }
@@ -1290,7 +1297,7 @@
 
     $('btn-transition').addEventListener('click', () => {
       const C = getC();
-      callContract(C.transition, 'signal-transition-v2', [], []);
+      callContract(C.transition, C.transitionFunc, [], []);
     });
 
     // ===== READ DATA =====
