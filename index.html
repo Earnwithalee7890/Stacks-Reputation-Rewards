@@ -1076,6 +1076,10 @@
 
     console.log("EarnWithAlee: Stacks Modules Loaded (Native ESM)");
 
+    // ===== UI UTILS =====
+    const $ = id => document.getElementById(id);
+    const bytesToHex = bytes => bytes.reduce((acc, b) => acc + b.toString(16).padStart(2, '0'), '');
+
     // CONFIG - CORRECTED TO USER'S ACTUAL MAINNET ADDRESS
     const DEPLOYER = 'SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT';
     
@@ -1101,19 +1105,18 @@
     let userAddress = null;
 
     // ===== DYNAMIC CONFIG =====
-    $('input-custom-name').value = customContractName;
-    $('btn-update-name').addEventListener('click', () => {
-      const newName = $('input-custom-name').value.trim();
-      if (newName) {
-        customContractName = newName;
-        localStorage.setItem('custom_contract_name', newName);
-        toast('Contract mapping updated to: ' + newName, 'success');
-        refreshDashboard();
-      }
-    });
-
-    // ===== UI ELEMENTS =====
-    const $ = id => document.getElementById(id);
+    if ($('input-custom-name')) {
+      $('input-custom-name').value = customContractName;
+      $('btn-update-name').addEventListener('click', () => {
+        const newName = $('input-custom-name').value.trim();
+        if (newName) {
+          customContractName = newName;
+          localStorage.setItem('custom_contract_name', newName);
+          toast('Contract mapping updated to: ' + newName, 'success');
+          refreshDashboard();
+        }
+      });
+    }
 
     // ===== TOAST =====
     function toast(msg, type = 'info') {
@@ -1281,9 +1284,6 @@
       const C = getC();
       callContract(C.transition, 'signal-transition-v2', [], []);
     });
-
-    // ===== UTILS =====
-    const bytesToHex = bytes => bytes.reduce((acc, b) => acc + b.toString(16).padStart(2, '0'), '');
 
     // ===== READ DATA =====
     async function refreshDashboard() {
