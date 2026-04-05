@@ -1037,7 +1037,7 @@
         <div class="treasury-inner">
           <div class="treasury-left">
             <h2 style="color: #f97316;">⚙️ Contract Diagnostics</h2>
-            <p style="color: #94a3b8; max-width: 500px;">Current: <code>...v3</code> / <code>signal-transition-v3</code>. If it fails, update below:</p>
+            <p style="color: #94a3b8; max-width: 500px;">Current: <code>v4</code> / <code>signal-transition-v3</code>. If it fails, update below:</p>
             <div style="display: grid; grid-template-columns: 1.5fr 1fr auto; gap: 1rem; margin-top: 1.5rem; width: 100%; max-width: 800px;">
               <input type="text" id="input-custom-id" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem; color: white; outline: none; font-family: monospace;" placeholder="Address.ContractName">
               <input type="text" id="input-custom-func" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem; color: white; outline: none; font-family: monospace;" placeholder="Function (e.g. signal-transition)">
@@ -1084,14 +1084,14 @@
     // CONFIG - CORRECTED TO USER'S ACTUAL MAINNET ADDRESS
     const DEPLOYER = 'SP2F500B8DTRK1EANJQ054BRAB8DDKN6QCMXGNFBT';
     
-    // Dynamic naming support - FORCING RESET TO FIX CACHING
-    if (!localStorage.getItem('config_v3_ready')) {
+    // Dynamic naming support - UPDATED TO USER VERSION V4
+    if (!localStorage.getItem('config_v4_ready')) {
       localStorage.removeItem('custom_contract_id');
       localStorage.removeItem('custom_func_name');
-      localStorage.setItem('config_v3_ready', 'true');
+      localStorage.setItem('config_v4_ready', 'true');
     }
 
-    let customContractId = localStorage.getItem('custom_contract_id') || `${DEPLOYER}.signal-transition-v3`;
+    let customContractId = localStorage.getItem('custom_contract_id') || `${DEPLOYER}.signal-transition-v4`;
     let customFunctionName = localStorage.getItem('custom_func_name') || 'signal-transition-v3';
 
     const getC = () => {
