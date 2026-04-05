@@ -1044,15 +1044,30 @@
   <!-- Toast Container -->
   <div id="toasts" class="toast-container"></div>
 
-  <!-- Stacks Connect via CDN -->
-  <script src="https://unpkg.com/@stacks/connect@8.2.4/dist/umd/index.umd.js"></script>
-  <script src="https://unpkg.com/@stacks/network@7.3.1/dist/umd/index.umd.js"></script>
-  <script src="https://unpkg.com/@stacks/transactions@7.3.1/dist/umd/index.umd.js"></script>
+  <!-- Stacks Connect via CDN - Using JSdelivr for improved reliability and better UMD support -->
+  <script src="https://cdn.jsdelivr.net/npm/@stacks/connect@8.2.4/dist/umd/index.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@stacks/network@7.3.1/dist/umd/index.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@stacks/transactions@7.3.1/dist/umd/index.umd.js"></script>
 
   <script>
-    console.log("Stacks libraries loading...");
+    console.log("Stacks libraries initialization...");
     
-    // ===== CONFIG =====
+    // Defensive global resolver to prevent ReferenceErrors
+    const getStacksLib = (name) => {
+      try {
+        return window[name] || (typeof globalThis !== 'undefined' ? globalThis[name] : null);
+      } catch (e) {
+        console.warn(`Error accessing Stacks library ${name}:`, e);
+        return null;
+      }
+    };
+
+    // Initialize library references
+    const SC = getStacksLib('StacksConnect');
+    const SN = getStacksLib('StacksNetwork');
+    const ST = getStacksLib('StacksTransactions');
+
+    // CONFIG
     const DEPLOYER = 'SP2F50MRY60R8DPW8T613YYAX04YV8CP06Y77J3BT';
     const C = {
       treasury: { addr: DEPLOYER, name: 'treasury' },
@@ -1068,12 +1083,16 @@
     };
 
     // ===== STACKS SETUP =====
-    // Use window.StacksConnect for reliability in UMD environments
-    const SC = window.StacksConnect || StacksConnect;
-    const appConfig = new SC.AppConfig(['store_write', 'publish_data']);
-    const userSession = new SC.UserSession({ appConfig });
-
+    let userSession = null;
     let userAddress = null;
+
+    if (SC) {
+      const appConfig = new SC.AppConfig(['store_write', 'publish_data']);
+      userSession = new SC.UserSession({ appConfig });
+      console.log("UserSession initialized");
+    } else {
+      console.error("CRITICAL: StacksConnect library failed to load globally.");
+    }
 
     // ===== UI ELEMENTS =====
     const $ = id => document.getElementById(id);
@@ -1089,7 +1108,12 @@
 
     // ===== WALLET =====
     $('btn-connect').addEventListener('click', () => {
-      console.log("Connect attempt...");
+      if (!SC) {
+        toast("Library error: Please refresh the page", "error");
+        return;
+      }
+      
+      console.log("Connect attempt starting...");
       SC.authenticate({
         userSession,
         appDetails: { 
@@ -1098,12 +1122,11 @@
         },
         onFinish: () => {
           const data = userSession.loadUserData();
-          console.log("Auth success", data);
+          console.log("Auth successful", data);
           userAddress = data.profile.stxAddress.mainnet || data.profile.stxAddress.testnet;
           
           if (!userAddress) {
-            console.error("No STX address found in profile", data.profile);
-            toast("Wallet error: No account found", "error");
+            toast("Wallet error: No address found", "error");
             return;
           }
           
@@ -1115,14 +1138,13 @@
           refreshDashboard();
         },
         onCancel: () => {
-          console.log("User cancelled auth");
           toast("Connection cancelled", "info");
         }
       });
     });
 
     // Auto-connect
-    if (userSession.isUserSignedIn()) {
+    if (userSession && userSession.isUserSignedIn()) {
       const data = userSession.loadUserData();
       userAddress = data.profile.stxAddress.mainnet || data.profile.stxAddress.testnet;
       if (userAddress) {
@@ -1135,8 +1157,7 @@
 
     // ===== HELPERS =====
     function getOpenContractCall() {
-      const sc = window.StacksConnect || StacksConnect;
-      if (sc && sc.openContractCall) return sc.openContractCall;
+      if (SC && SC.openContractCall) return SC.openContractCall;
       if (window.openContractCall) return window.openContractCall;
       return null;
     }
@@ -1158,7 +1179,7 @@
         functionArgs: args,
         postConditionMode: 0x02, // Deny
         postConditions: postConditions || [],
-        network: StacksNetwork.STACKS_MAINNET,
+        network: SN.STACKS_MAINNET,
         appDetails: { 
           name: 'EarnWithAlee', 
           icon: window.location.origin + '/favicon.ico' 
@@ -1183,7 +1204,7 @@
       const github = $('input-github').value.trim();
       if (!github) { toast('Enter your GitHub username', 'error'); return; }
       callContract(C.registry, 'register-builder',
-        [StacksTransactions.stringAsciiCV(github)],
+        [ST.stringAsciiCV(github)],
         []
       );
     });
@@ -1199,9 +1220,9 @@
       const stakeAmt = Math.floor(amt * 1000000);
       const fee = 40000;
       callContract(C.staking, 'stake-stx',
-        [StacksTransactions.uintCV(stakeAmt)],
-        [StacksTransactions.makeStandardSTXPostCondition(
-          userAddress, StacksTransactions.FungibleConditionCode.Equal, stakeAmt + fee
+        [ST.uintCV(stakeAmt)],
+        [ST.makeStandardSTXPostCondition(
+          userAddress, ST.FungibleConditionCode.Equal, stakeAmt + fee
         )]
       );
     });
@@ -1212,9 +1233,9 @@
       if (!addr) { toast('Enter builder address', 'error'); return; }
       const fee = 100000;
       callContract(C.verifier, 'verify-builder',
-        [StacksTransactions.standardPrincipalCV(addr)],
-        [StacksTransactions.makeStandardSTXPostCondition(
-          userAddress, StacksTransactions.FungibleConditionCode.Equal, fee
+        [ST.standardPrincipalCV(addr)],
+        [ST.makeStandardSTXPostCondition(
+          userAddress, ST.FungibleConditionCode.Equal, fee
         )]
       );
     });
@@ -1225,7 +1246,7 @@
       const amt = parseInt($('input-reward-amt').value);
       if (!recipient || !amt) { toast('Fill in both fields', 'error'); return; }
       callContract(C.treasury, 'withdraw-for-rewards',
-        [StacksTransactions.uintCV(amt), StacksTransactions.standardPrincipalCV(recipient)],
+        [ST.uintCV(amt), ST.standardPrincipalCV(recipient)],
         []
       );
     });
@@ -1239,9 +1260,9 @@
       const stxMicro = Math.floor(stxAmt * 1000000);
       const fee = 50000;
       callContract(C.swap, 'create-sell-order',
-        [StacksTransactions.uintCV(stxMicro), StacksTransactions.uintCV(price)],
-        [StacksTransactions.makeStandardSTXPostCondition(
-          userAddress, StacksTransactions.FungibleConditionCode.Equal, stxMicro + fee
+        [ST.uintCV(stxMicro), ST.uintCV(price)],
+        [ST.makeStandardSTXPostCondition(
+          userAddress, ST.FungibleConditionCode.Equal, stxMicro + fee
         )]
       );
     });
@@ -1255,9 +1276,9 @@
       const stxMicro = Math.floor(stxAmt * 1000000);
       const fee = 80000;
       callContract(C.escrow, 'create-escrow',
-        [StacksTransactions.uintCV(stxMicro), StacksTransactions.uintCV(sbtcAmt)],
-        [StacksTransactions.makeStandardSTXPostCondition(
-          userAddress, StacksTransactions.FungibleConditionCode.Equal, stxMicro + fee
+        [ST.uintCV(stxMicro), ST.uintCV(sbtcAmt)],
+        [ST.makeStandardSTXPostCondition(
+          userAddress, ST.FungibleConditionCode.Equal, stxMicro + fee
         )]
       );
     });
@@ -1271,9 +1292,9 @@
       const rewardMicro = Math.floor(reward * 1000000);
       const fee = 60000;
       callContract(C.bounties, 'post-bounty',
-        [StacksTransactions.uintCV(rewardMicro), StacksTransactions.stringAsciiCV(desc)],
-        [StacksTransactions.makeStandardSTXPostCondition(
-          userAddress, StacksTransactions.FungibleConditionCode.Equal, rewardMicro + fee
+        [ST.uintCV(rewardMicro), ST.stringAsciiCV(desc)],
+        [ST.makeStandardSTXPostCondition(
+          userAddress, ST.FungibleConditionCode.Equal, rewardMicro + fee
         )]
       );
     });
@@ -1293,12 +1314,12 @@
         const checkinRes = await fetch(`${apiBase}/v2/contracts/call-read/${C.checkin.addr}/${C.checkin.name}/get-check-in-count`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sender: userAddress, arguments: [StacksTransactions.cvToHex(StacksTransactions.standardPrincipalCV(userAddress))] })
+          body: JSON.stringify({ sender: userAddress, arguments: [ST.cvToHex(ST.standardPrincipalCV(userAddress))] })
         });
         if (checkinRes.ok) {
           const d = await checkinRes.json();
           if (d.okay) {
-            const val = StacksTransactions.cvToValue(StacksTransactions.hexToCV(d.result));
+            const val = ST.cvToValue(ST.hexToCV(d.result));
             $('ui-checkins').textContent = val.toString();
           }
         }
@@ -1307,12 +1328,12 @@
         const spentRes = await fetch(`${apiBase}/v2/contracts/call-read/${C.treasury.addr}/${C.treasury.name}/get-total-spent`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sender: userAddress, arguments: [StacksTransactions.cvToHex(StacksTransactions.standardPrincipalCV(userAddress))] })
+          body: JSON.stringify({ sender: userAddress, arguments: [ST.cvToHex(ST.standardPrincipalCV(userAddress))] })
         });
         if (spentRes.ok) {
           const d = await spentRes.json();
           if (d.okay) {
-            const val = parseInt(StacksTransactions.cvToValue(StacksTransactions.hexToCV(d.result)));
+            const val = parseInt(ST.cvToValue(ST.hexToCV(d.result)));
             $('ui-spent').textContent = (val / 1000000).toFixed(2) + ' STX';
           }
         }
@@ -1321,14 +1342,14 @@
         const profRes = await fetch(`${apiBase}/v2/contracts/call-read/${C.registry.addr}/${C.registry.name}/get-builder`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sender: userAddress, arguments: [StacksTransactions.cvToHex(StacksTransactions.standardPrincipalCV(userAddress))] })
+          body: JSON.stringify({ sender: userAddress, arguments: [ST.cvToHex(ST.standardPrincipalCV(userAddress))] })
         });
         if (profRes.ok) {
           const d = await profRes.json();
           if (d.okay) {
-            const cv = StacksTransactions.hexToCV(d.result);
+            const cv = ST.hexToCV(d.result);
             if (cv.type === 10) { // some
-              const profile = StacksTransactions.cvToValue(cv);
+              const profile = ST.cvToValue(cv);
               $('ui-rep').textContent = profile.reputation?.value?.toString() || '0';
             }
           }
@@ -1338,12 +1359,12 @@
         const stakeRes = await fetch(`${apiBase}/v2/contracts/call-read/${C.staking.addr}/${C.staking.name}/get-stake`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sender: userAddress, arguments: [StacksTransactions.cvToHex(StacksTransactions.standardPrincipalCV(userAddress))] })
+          body: JSON.stringify({ sender: userAddress, arguments: [ST.cvToHex(ST.standardPrincipalCV(userAddress))] })
         });
         if (stakeRes.ok) {
           const d = await stakeRes.json();
           if (d.okay) {
-            const val = parseInt(StacksTransactions.cvToValue(StacksTransactions.hexToCV(d.result)));
+            const val = parseInt(ST.cvToValue(ST.hexToCV(d.result)));
             $('ui-staked').textContent = (val / 1000000).toFixed(2) + ' STX';
           }
         }
@@ -1365,7 +1386,7 @@
         if (signalsRes.ok) {
           const d = await signalsRes.json();
           if (d.okay) {
-            const val = StacksTransactions.cvToValue(StacksTransactions.hexToCV(d.result));
+            const val = ST.cvToValue(ST.hexToCV(d.result));
             $('ui-signals').textContent = val.value.toString();
           }
         }
