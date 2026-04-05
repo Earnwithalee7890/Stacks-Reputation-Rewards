@@ -1045,13 +1045,14 @@
   <div id="toasts" class="toast-container"></div>
 
   <!-- Stacks Connect via CDN -->
-  <script src="https://unpkg.com/@stacks/connect@latest/dist/umd/index.umd.js"></script>
-  <script src="https://unpkg.com/@stacks/network@latest/dist/umd/index.umd.js"></script>
-  <script src="https://unpkg.com/@stacks/transactions@latest/dist/umd/index.umd.js"></script>
+  <script src="https://unpkg.com/@stacks/connect@8.2.4/dist/umd/index.umd.js"></script>
+  <script src="https://unpkg.com/@stacks/network@7.3.1/dist/umd/index.umd.js"></script>
+  <script src="https://unpkg.com/@stacks/transactions@7.3.1/dist/umd/index.umd.js"></script>
 
   <script>
+    console.log("Stacks libraries loading...");
+    
     // ===== CONFIG =====
-    // UPDATE THESE after deploying your contracts
     const DEPLOYER = 'SP2F50MRY60R8DPW8T613YYAX04YV8CP06Y77J3BT';
     const C = {
       treasury: { addr: DEPLOYER, name: 'treasury' },
@@ -1067,8 +1068,10 @@
     };
 
     // ===== STACKS SETUP =====
-    const appConfig = new StacksConnect.AppConfig(['store_write', 'publish_data']);
-    const userSession = new StacksConnect.UserSession({ appConfig });
+    // Use window.StacksConnect for reliability in UMD environments
+    const SC = window.StacksConnect || StacksConnect;
+    const appConfig = new SC.AppConfig(['store_write', 'publish_data']);
+    const userSession = new SC.UserSession({ appConfig });
 
     let userAddress = null;
 
@@ -1086,11 +1089,24 @@
 
     // ===== WALLET =====
     $('btn-connect').addEventListener('click', () => {
-      StacksConnect.showConnect({
-        appDetails: { name: 'EarnWithAlee', icon: 'https://stacks.co/favicon.ico' },
+      console.log("Connect attempt...");
+      SC.authenticate({
+        userSession,
+        appDetails: { 
+          name: 'EarnWithAlee', 
+          icon: window.location.origin + '/favicon.ico' 
+        },
         onFinish: () => {
           const data = userSession.loadUserData();
-          userAddress = data.profile.stxAddress.mainnet;
+          console.log("Auth success", data);
+          userAddress = data.profile.stxAddress.mainnet || data.profile.stxAddress.testnet;
+          
+          if (!userAddress) {
+            console.error("No STX address found in profile", data.profile);
+            toast("Wallet error: No account found", "error");
+            return;
+          }
+          
           $('btn-connect').classList.add('hidden');
           $('wallet-info').classList.remove('hidden');
           $('wallet-addr').textContent = userAddress.substring(0, 5) + '...' + userAddress.slice(-4);
@@ -1098,23 +1114,29 @@
           toast('Wallet connected!', 'success');
           refreshDashboard();
         },
-        userSession,
+        onCancel: () => {
+          console.log("User cancelled auth");
+          toast("Connection cancelled", "info");
+        }
       });
     });
 
     // Auto-connect
     if (userSession.isUserSignedIn()) {
       const data = userSession.loadUserData();
-      userAddress = data.profile.stxAddress.mainnet;
-      $('btn-connect').classList.add('hidden');
-      $('wallet-info').classList.remove('hidden');
-      $('wallet-addr').textContent = userAddress.substring(0, 5) + '...' + userAddress.slice(-4);
-      refreshDashboard();
+      userAddress = data.profile.stxAddress.mainnet || data.profile.stxAddress.testnet;
+      if (userAddress) {
+        $('btn-connect').classList.add('hidden');
+        $('wallet-info').classList.remove('hidden');
+        $('wallet-addr').textContent = userAddress.substring(0, 5) + '...' + userAddress.slice(-4);
+        refreshDashboard();
+      }
     }
 
     // ===== HELPERS =====
     function getOpenContractCall() {
-      if (window.StacksConnect && window.StacksConnect.openContractCall) return window.StacksConnect.openContractCall;
+      const sc = window.StacksConnect || StacksConnect;
+      if (sc && sc.openContractCall) return sc.openContractCall;
       if (window.openContractCall) return window.openContractCall;
       return null;
     }
@@ -1137,7 +1159,10 @@
         postConditionMode: 0x02, // Deny
         postConditions: postConditions || [],
         network: StacksNetwork.STACKS_MAINNET,
-        appDetails: { name: 'EarnWithAlee', icon: 'https://stacks.co/favicon.ico' },
+        appDetails: { 
+          name: 'EarnWithAlee', 
+          icon: window.location.origin + '/favicon.ico' 
+        },
         onFinish: (data) => {
           toast('Transaction broadcasted! TX: ' + data.txId.substring(0, 12) + '...', 'success');
           if (onDone) onDone(data);
